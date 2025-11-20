@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { ChatArea } from '@/components/chat/ChatArea';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { HomeScreen } from '@/components/home/HomeScreen';
+import { DebateView } from '@/components/debate/DebateView';
 import { useStore } from '@/lib/store';
 import { Message, Agent } from '@/lib/types';
 import { startDebate, getAgents } from '@/lib/api';
@@ -190,10 +191,7 @@ export default function Home() {
         {!chat || !currentChatId ? (
           <HomeScreen onStartDebate={handleSendMessage} />
         ) : (
-          <>
-            <ChatArea />
-            <ChatInput onSendMessage={handleSendMessage} />
-          </>
+          <DebateView onSendMessage={handleSendMessage} />
         )}
       </div>
     </div>
