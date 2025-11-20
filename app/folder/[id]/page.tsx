@@ -6,24 +6,27 @@ import { Sidebar } from '@/components/sidebar/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { useStore } from '@/lib/store';
 import { Button } from '@/components/ui/button';
-import { MessageSquarePlus, MoreVertical, List, Share2, Pencil, Folder, FolderOpen, Trash2, Settings } from 'lucide-react';
+import { MessageSquarePlus, MoreVertical, List, Share2, Pencil, FolderOpen, Trash2, Settings } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Chat } from '@/lib/types';
+import { Chat, Message } from '@/lib/types';
 import { AGENTS } from '@/lib/constants';
-import { getAgents } from '@/lib/api';
+import { getAgents, startDebate } from '@/lib/api';
 import { Agent } from '@/lib/types';
 import { Toast } from '@/components/ui/toast';
+import { HomeScreen } from '@/components/home/HomeScreen';
+import { ChatArea } from '@/components/chat/ChatArea';
+import { ChatInput } from '@/components/chat/ChatInput';
 
 export default function FolderPage() {
   const params = useParams();
   const router = useRouter();
   const folderId = params.id as string;
   
-  const { folders, chats, setCurrentChat, deleteChat, moveChatToFolder, updateFolder, deleteFolder, setSelectedFolder, updateChat } = useStore();
+  const { folders, chats, setCurrentChat, deleteChat, moveChatToFolder, updateFolder, deleteFolder, setSelectedFolder, updateChat, createChat, addMessage, setIsDebating, updateChatDebateId, selectedAgents, numRodadas, currentChatId: storeCurrentChatId, setCurrentChat: setStoreCurrentChat } = useStore();
   const [availableAgents, setAvailableAgents] = useState<Agent[]>(AGENTS);
   const [menuOpenChatId, setMenuOpenChatId] = useState<string | null>(null);
   const [draggedChatId, setDraggedChatId] = useState<string | null>(null);
@@ -31,6 +34,10 @@ export default function FolderPage() {
   const [renameChatId, setRenameChatId] = useState<string | null>(null);
   const [newChatTitle, setNewChatTitle] = useState<string>('');
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
+  const [showNewConversation, setShowNewConversation] = useState(false);
+  
+  // Usar o currentChatId do store, mas apenas quando estiver nessa pasta
+  const currentChatId = storeCurrentChatId && chats.find(c => c.id === storeCurrentChatId)?.folderId === folderId ? storeCurrentChatId : null;
 
   const folder = folders.find(f => f.id === folderId);
   const folderChats = chats.filter(chat => chat.folderId === folderId);
@@ -71,8 +78,8 @@ export default function FolderPage() {
   }
 
   const handleChatClick = (chatId: string) => {
-    setCurrentChat(chatId);
-    router.push('/');
+    setStoreCurrentChat(chatId);
+    setShowNewConversation(false);
   };
 
   const handleDeleteChat = (chatId: string) => {
@@ -162,7 +169,124 @@ export default function FolderPage() {
   };
 
   const handleNewChat = () => {
-    router.push('/');
+    setShowNewConversation(true);
+    setStoreCurrentChat(null);
+  };
+
+  const handleSendMessage = async (pergunta: string) => {
+    if (selectedAgents.length < 2) {
+      alert('Selecione pelo menos 2 agentes para iniciar o debate');
+      return;
+    }
+
+    const chatId = createChat({
+      selectedAgents,
+      numRodadas,
+      pergunta
+    });
+
+    // Associar chat à pasta atual imediatamente após a criação
+    moveChatToFolder(chatId, folderId);
+
+    // Adicionar mensagem de pergunta
+    const questionMessage: Message = {
+      id: Date.now().toString(),
+      type: 'question',
+      content: pergunta,
+      timestamp: new Date()
+    };
+    addMessage(chatId, questionMessage);
+
+    setIsDebating(true);
+    setStoreCurrentChat(chatId);
+    setShowNewConversation(false);
+
+    try {
+      const response = await startDebate({
+        agentes: selectedAgents,
+        pergunta,
+        num_rodadas: numRodadas
+      });
+
+      if (response.debate_id) {
+        updateChatDebateId(chatId, response.debate_id);
+      }
+
+      // Processar histórico
+      let currentRound = 0;
+      for (const item of response.historico || []) {
+        if (item.tipo === 'rodada') {
+          currentRound++;
+          const roundMessage: Message = {
+            id: `round-${currentRound}-${Date.now()}`,
+            type: 'round',
+            content: item.conteudo,
+            roundNumber: currentRound,
+            timestamp: new Date()
+          };
+          addMessage(chatId, roundMessage);
+        } else if (item.tipo === 'resposta') {
+          let agent = availableAgents.find(a =>
+            item.agente?.includes(a.name) ||
+            item.agente === a.role ||
+            item.agente === a.name ||
+            (selectedAgents.includes(a.id) && item.agente?.includes(a.role))
+          );
+
+          if (!agent) {
+            agent = availableAgents.find(a => selectedAgents.includes(a.id));
+          }
+
+          const agentMessage: Message = {
+            id: `agent-${Date.now()}-${Math.random()}`,
+            type: 'agent',
+            agentId: agent?.id || item.agente || 'unknown',
+            agentName: agent?.name || item.agente || 'Agente',
+            agentRole: agent?.role || item.agente || '',
+            agentAvatar: agent?.avatar || '👤',
+            agentColor: agent?.color || '#8b5cf6',
+            content: item.conteudo,
+            timestamp: new Date(),
+            roundNumber: currentRound
+          };
+          addMessage(chatId, agentMessage);
+        } else if (item.tipo === 'sintese') {
+          const sinteseMessage: Message = {
+            id: `sintese-${Date.now()}`,
+            type: 'sintese',
+            content: item.conteudo,
+            timestamp: new Date()
+          };
+          addMessage(chatId, sinteseMessage);
+        }
+      }
+
+      if (response.sintese) {
+        const sinteseConteudo: Message = {
+          id: `sintese-content-${Date.now()}`,
+          type: 'sintese_conteudo',
+          content: response.sintese,
+          timestamp: new Date()
+        };
+        addMessage(chatId, sinteseConteudo);
+      }
+    } catch (error) {
+      console.error('Erro ao iniciar debate:', error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        type: 'user',
+        content: `Erro ao executar debate: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+        timestamp: new Date()
+      };
+      addMessage(chatId, errorMessage);
+    } finally {
+      setIsDebating(false);
+    }
+  };
+
+  const handleBackToList = () => {
+    setShowNewConversation(false);
+    setStoreCurrentChat(null);
   };
 
   const handleDeleteFolder = () => {
@@ -223,12 +347,31 @@ export default function FolderPage() {
       <div className="flex-1 flex flex-col ml-[280px] overflow-hidden relative z-10">
         <Header />
         <div className="flex-1 overflow-y-auto relative">
-          <div className="min-h-full">
+          {showNewConversation ? (
+            <div className="h-full">
+              <HomeScreen onStartDebate={handleSendMessage} folderName={folder?.name} />
+            </div>
+          ) : currentChatId ? (
+            <div className="flex-1 flex flex-col h-full">
+              <div className="flex items-center gap-4 px-8 pt-4 pb-2">
+                <Button
+                  variant="ghost"
+                  onClick={handleBackToList}
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  ← Voltar para lista
+                </Button>
+              </div>
+              <ChatArea />
+              <ChatInput onSendMessage={handleSendMessage} />
+            </div>
+          ) : (
+          <div className="min-h-full max-w-5xl mx-auto px-12">
             {/* Header da Pasta */}
-            <div className="flex items-center justify-between p-8 pb-6">
+            <div className="flex items-center justify-between pt-8 pb-6 mx-2">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-[#3B82F6] rounded-lg flex items-center justify-center">
-                  <Folder className="w-6 h-6 text-white" />
+                <div className="w-16 h-16 flex items-center justify-center">
+                  <img src="/folder-open.png" alt={folder.name} className="w-10 h-10 object-contain" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-white">{folder.name}</h1>
@@ -269,7 +412,7 @@ export default function FolderPage() {
             </div>
 
             {/* Lista de Chats */}
-            <div className="space-y-0">
+            <div className="space-y-0 pb-8">
               {folderChats.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-white/60">Nenhum chat nesta pasta ainda</p>
@@ -283,7 +426,7 @@ export default function FolderPage() {
                       draggable
                       onDragStart={(e) => handleDragStart(e, chat.id)}
                       onDragEnd={handleDragEnd}
-                      className={`flex items-center justify-between px-6 py-4 hover:bg-black/40 transition-all duration-200 cursor-pointer mx-4 my-2 ${
+                      className={`flex items-center justify-between px-8 py-5 hover:bg-black/40 transition-all duration-200 cursor-pointer mx-2 my-2 ${
                         index !== folderChats.length - 1 ? 'border-b border-white/20' : ''
                       } ${
                         draggedChatId === chat.id 
@@ -291,7 +434,7 @@ export default function FolderPage() {
                           : 'cursor-grab active:cursor-grabbing'
                       }`}
                       style={{
-                        borderRadius: '50px'
+                        borderRadius: '30px'
                       }}
                       onClick={() => handleChatClick(chat.id)}
                     >
@@ -400,6 +543,7 @@ export default function FolderPage() {
               )}
             </div>
           </div>
+          )}
         </div>
       </div>
 
