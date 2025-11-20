@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mesa de Debates - Interface Web Moderna
 
-## Getting Started
+Interface web moderna para debates entre bilionários de tecnologia usando Next.js 14+, TypeScript, Tailwind CSS e Shadcn/ui.
 
-First, run the development server:
+## 🚀 Iniciando o Projeto
+
+### Instalação
+
+```bash
+npm install
+```
+
+### Executar em Desenvolvimento
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+A aplicação estará disponível em `http://localhost:3000`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Build para Produção
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## 📁 Estrutura do Projeto
 
-To learn more about Next.js, take a look at the following resources:
+```
+web/
+├── app/                    # Next.js App Router
+│   ├── layout.tsx         # Layout principal
+│   ├── page.tsx           # Página principal
+│   └── globals.css        # Estilos globais
+├── components/
+│   ├── sidebar/           # Componentes da sidebar
+│   ├── chat/              # Componentes do chat
+│   ├── agents/             # Componentes de seleção de agentes
+│   └── ui/                 # Componentes Shadcn/ui
+├── lib/
+│   ├── types.ts           # Tipos TypeScript
+│   ├── constants.ts       # Constantes e dados
+│   ├── store.ts           # Store Zustand
+│   └── api.ts             # Funções de API
+└── public/                # Arquivos estáticos
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🔌 Integração com Backend Python
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+A aplicação espera um servidor API Python rodando. Você precisa criar endpoints que correspondam à interface definida em `lib/api.ts`.
 
-## Deploy on Vercel
+### Endpoint Necessário
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**POST /api/debate/start**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```typescript
+Request: {
+  agentes: string[];      // IDs dos agentes selecionados
+  pergunta: string;       // Pergunta do debate
+  num_rodadas: number;    // Número de rodadas (1-5)
+}
+
+Response: {
+  historico: Array<{
+    tipo: 'pergunta' | 'rodada' | 'resposta' | 'erro';
+    conteudo: string;
+    agente?: string;       // Nome/role do agente
+    rodada?: number;
+  }>;
+}
+```
+
+### Configuração da URL da API
+
+Crie um arquivo `.env.local` na raiz do projeto `web/`:
+
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000/api
+```
+
+Ou ajuste a URL em `lib/api.ts` se preferir.
+
+## 🎨 Características
+
+- ✅ Interface moderna e responsiva
+- ✅ Dark mode nativo
+- ✅ Seleção múltipla de agentes
+- ✅ Histórico de debates persistente (localStorage)
+- ✅ Animações suaves
+- ✅ Estados de loading
+- ✅ Validações de formulário
+- ✅ Acessibilidade
+
+## 🛠️ Tecnologias
+
+- **Next.js 14+** - Framework React
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização
+- **Shadcn/ui** - Componentes UI
+- **Zustand** - Gerenciamento de estado
+- **Lucide React** - Ícones
+- **date-fns** - Manipulação de datas
+
+## 📝 Próximos Passos
+
+1. Criar servidor API Python (FastAPI ou Flask)
+2. Implementar autenticação (opcional)
+3. Adicionar mais funcionalidades (exportar debates, compartilhar, etc.)
+4. Melhorar responsividade mobile
+5. Adicionar testes
