@@ -8,7 +8,6 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { FormField } from '@/components/admin/FormField';
-import { Progress } from '@/components/ui/progress';
 import {
   SystemSettings,
   SystemSettingsUpdate,
@@ -51,42 +50,6 @@ export default function SettingsPage() {
     };
   }, []);
 
-  const usagePercent = settings
-    ? Math.min(
-        100,
-        Math.floor(
-          (settings.api_limits.used_tokens / Math.max(settings.api_limits.monthly_tokens, 1)) * 100
-        )
-      )
-    : 0;
-
-  const updateDebateConfig = (changes: Partial<SystemSettings['debate_config']>) => {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            debate_config: {
-              ...prev.debate_config,
-              ...changes,
-            },
-          }
-        : prev
-    );
-  };
-
-  const updateApiLimits = (changes: Partial<SystemSettings['api_limits']>) => {
-    setSettings((prev) =>
-      prev
-        ? {
-            ...prev,
-            api_limits: {
-              ...prev.api_limits,
-              ...changes,
-            },
-          }
-        : prev
-    );
-  };
 
   const updateSecurity = (changes: Partial<SystemSettings['security']>) => {
     setSettings((prev) =>
@@ -121,15 +84,6 @@ export default function SettingsPage() {
     }
 
     const payload: SystemSettingsUpdate = {
-      debate_config: {
-        max_rounds: settings.debate_config.max_rounds,
-        response_timeout: settings.debate_config.response_timeout,
-        allow_without_min_agents: settings.debate_config.allow_without_min_agents,
-      },
-      api_limits: {
-        monthly_tokens: settings.api_limits.monthly_tokens,
-        alert_threshold: settings.api_limits.alert_threshold,
-      },
       security: securityPayload,
     };
 
@@ -170,86 +124,6 @@ export default function SettingsPage() {
       {errorMessage && <p className="text-sm text-destructive mb-2">{errorMessage}</p>}
 
       <div className="space-y-6 max-w-3xl">
-        {/* Configurações de Debate */}
-        <Card className="bg-[#2d2d2d] border-white/10">
-          <CardHeader>
-            <CardTitle>Configurações de Debate</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField label="Número máximo de rodadas">
-              <Input
-                type="number"
-                min={1}
-                max={10}
-                value={settings.debate_config.max_rounds}
-                onChange={(event) =>
-                  updateDebateConfig({ max_rounds: Number(event.target.value) || 1 })
-                }
-              />
-            </FormField>
-
-            <FormField label="Timeout por resposta (segundos)">
-              <Input
-                type="number"
-                min={30}
-                max={300}
-                value={settings.debate_config.response_timeout}
-                onChange={(event) =>
-                  updateDebateConfig({ response_timeout: Number(event.target.value) || 30 })
-                }
-              />
-            </FormField>
-
-            <FormField label="Permitir debates sem mínimo de agentes">
-              <div className="flex items-center gap-2">
-                <Switch
-                  checked={settings.debate_config.allow_without_min_agents}
-                  onCheckedChange={(value) =>
-                    updateDebateConfig({ allow_without_min_agents: Boolean(value) })
-                  }
-                />
-                <Label>Permitir</Label>
-              </div>
-            </FormField>
-          </CardContent>
-        </Card>
-
-        {/* Configurações de API */}
-        <Card className="bg-[#2d2d2d] border-white/10">
-          <CardHeader>
-            <CardTitle>Limites de API</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField label="Limite mensal de tokens">
-              <Input
-                type="number"
-                min={1}
-                value={settings.api_limits.monthly_tokens}
-                onChange={(event) =>
-                  updateApiLimits({ monthly_tokens: Number(event.target.value) || 1 })
-                }
-              />
-              <Progress value={usagePercent} className="mt-2" />
-              <p className="text-xs text-muted-foreground mt-1">
-                {settings.api_limits.used_tokens.toLocaleString()} /{' '}
-                {settings.api_limits.monthly_tokens.toLocaleString()} usados
-              </p>
-            </FormField>
-
-            <FormField label="Alertar quando atingir (%)">
-              <Input
-                type="number"
-                min={1}
-                max={100}
-                value={settings.api_limits.alert_threshold}
-                onChange={(event) =>
-                  updateApiLimits({ alert_threshold: Number(event.target.value) || 1 })
-                }
-              />
-            </FormField>
-          </CardContent>
-        </Card>
-
         {/* Configurações de Segurança */}
         <Card className="bg-[#2d2d2d] border-white/10">
           <CardHeader>

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { createFolder } from '@/lib/folders-api';
 import { useStore } from '@/lib/store';
 import { Folder } from '@/lib/types';
+import { useToastStore } from '@/lib/toast-store';
 
 interface CreateFolderDialogProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function CreateFolderDialog({ open, onOpenChange }: CreateFolderDialogPro
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { addFolder } = useStore();
+  const { showToast } = useToastStore();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,7 @@ export function CreateFolderDialog({ open, onOpenChange }: CreateFolderDialogPro
       onOpenChange(false);
     } catch (error) {
       console.error('Erro ao criar pasta:', error);
-      alert('Erro ao criar pasta. Tente novamente.');
+      showToast('Erro ao criar pasta. Tente novamente.', 'error');
     } finally {
       setIsLoading(false);
     }

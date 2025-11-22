@@ -134,8 +134,10 @@ export function ChatHistory() {
           }`}
           onClick={() => setCurrentChat(chat.id)}
         >
-          <div className="flex-1 min-w-0">
-            <p className="text-sm text-foreground truncate">{chat.title}</p>
+          <div className="flex-1 min-w-0 max-w-full">
+            <p className="text-sm text-foreground truncate" title={chat.title}>
+              {chat.title.length > 30 ? `${chat.title.substring(0, 30)}...` : chat.title}
+            </p>
             <p className="text-xs text-muted-foreground">
               {format(new Date(chat.createdAt), "d 'de' MMM", { locale: ptBR })}
             </p>

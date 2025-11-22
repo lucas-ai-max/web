@@ -11,6 +11,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { useToastStore } from '@/lib/toast-store';
+import { useConfirm } from '@/lib/useConfirm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface AgentCardProps {
   agent: {
@@ -25,6 +28,9 @@ interface AgentCardProps {
 }
 
 export function AgentCard({ agent }: AgentCardProps) {
+  const { showToast } = useToastStore();
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
+  
   return (
     <div className="bg-[#2d2d2d] border border-white/10 rounded-xl p-5 hover:scale-[1.02] hover:shadow-xl transition-all duration-200">
       <div className="flex items-start justify-between mb-4">
@@ -71,12 +77,6 @@ export function AgentCard({ agent }: AgentCardProps) {
                 Editar
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href={`/admin/agents/${agent.id}/knowledge`}>
-                <Edit className="mr-2 h-4 w-4" />
-                Base de Conhecimento
-              </Link>
-            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={async () => {
                 try {
@@ -85,7 +85,7 @@ export function AgentCard({ agent }: AgentCardProps) {
                   window.location.reload();
                 } catch (error) {
                   console.error('Erro ao duplicar:', error);
-                  alert('Erro ao duplicar agente');
+                  showToast('Erro ao duplicar agente', 'error');
                 }
               }}
             >
@@ -94,17 +94,27 @@ export function AgentCard({ agent }: AgentCardProps) {
             </DropdownMenuItem>
             <DropdownMenuItem
               className="text-red-500"
-              onClick={async () => {
-                if (confirm(`Tem certeza que deseja deletar ${agent.name}?`)) {
+              onSelect={(e) => {
+                e.preventDefault();
+                // Usar setTimeout para garantir que o dropdown feche antes de abrir o diálogo
+                setTimeout(async () => {
+                  const confirmed = await confirm({
+                    title: 'Confirmar exclusão',
+                    message: `Tem certeza que deseja deletar ${agent.name}?`,
+                    variant: 'destructive',
+                  });
+                  
+                  if (!confirmed) return;
+                  
                   try {
                     const { deleteAgent } = await import('@/lib/admin-api');
                     await deleteAgent(agent.id);
                     window.location.reload();
                   } catch (error) {
                     console.error('Erro ao deletar:', error);
-                    alert('Erro ao deletar agente');
+                    showToast('Erro ao deletar agente', 'error');
                   }
-                }
+                }, 0);
               }}
             >
               <Trash2 className="mr-2 h-4 w-4" />
@@ -128,6 +138,16 @@ export function AgentCard({ agent }: AgentCardProps) {
           {agent.status === 'active' ? 'Ativo' : 'Inativo'}
         </Badge>
       </div>
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.options?.title || 'Confirmar'}
+        message={confirmState.options?.message || ''}
+        confirmText={confirmState.options?.confirmText || 'Confirmar'}
+        cancelText={confirmState.options?.cancelText || 'Cancelar'}
+        variant={confirmState.options?.variant || 'default'}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

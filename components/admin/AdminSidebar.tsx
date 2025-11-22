@@ -66,17 +66,17 @@ export function AdminSidebar() {
   });
 
   return (
-    <div className="w-[240px] h-screen bg-[#1a1a1a] flex flex-col border-r border-white/10">
+    <div className="w-[240px] h-screen bg-black/20 backdrop-blur-xl flex flex-col border-r border-white/10">
       {/* Header */}
       <div className="p-6 border-b border-white/10">
         <div className="flex items-center gap-2">
           <Shield className="w-5 h-5 text-primary" />
-          <h1 className="text-white text-lg font-semibold">Admin Panel</h1>
+          <h1 className="text-white text-lg font-semibold">Mind Panel</h1>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 p-4">
+      <div className="flex-1 p-4 overflow-y-auto overflow-x-hidden custom-scrollbar">
         <nav className="space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;

@@ -1,8 +1,32 @@
 import { Agent } from './types';
 
+/**
+ * Gera um ID único baseado no nome do agente
+ * Usa hash simples para garantir IDs consistentes e únicos
+ */
+function generateAgentId(name: string): string {
+  // Se o nome já é um UUID válido, retornar como está
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(name)) {
+    return name;
+  }
+  
+  // Gerar hash simples do nome para IDs consistentes
+  let hash = 0;
+  const normalizedName = name.toLowerCase().trim();
+  for (let i = 0; i < normalizedName.length; i++) {
+    const char = normalizedName.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  
+  // Retornar hash positivo como string hexadecimal
+  return Math.abs(hash).toString(16).padStart(8, '0');
+}
+
 export const AGENTS: Agent[] = [
   {
-    id: 'elon',
+    id: generateAgentId('Elon Musk'),
     name: 'Elon Musk',
     role: 'CEO da Tesla e SpaceX',
     avatar: '🚀',
@@ -10,7 +34,7 @@ export const AGENTS: Agent[] = [
     backstory: 'Visionário conhecido por suas ideias revolucionárias. Direto, às vezes controverso, mas sempre focado em resolver grandes problemas da humanidade.'
   },
   {
-    id: 'bill',
+    id: generateAgentId('Bill Gates'),
     name: 'Bill Gates',
     role: 'Co-fundador da Microsoft e Filantropo',
     avatar: '💻',
@@ -18,7 +42,7 @@ export const AGENTS: Agent[] = [
     backstory: 'Pioneiro da revolução dos computadores pessoais. Estratégico, pensa em longo prazo e está profundamente comprometido com filantropia.'
   },
   {
-    id: 'jeff',
+    id: generateAgentId('Jeff Bezos'),
     name: 'Jeff Bezos',
     role: 'Fundador da Amazon',
     avatar: '📦',
@@ -26,7 +50,7 @@ export const AGENTS: Agent[] = [
     backstory: 'Conhecido por seu pensamento de longo prazo e obsessão pelo cliente. Acredita em "Day 1" - sempre manter a mentalidade de startup.'
   },
   {
-    id: 'mark',
+    id: generateAgentId('Mark Zuckerberg'),
     name: 'Mark Zuckerberg',
     role: 'CEO do Meta (Facebook)',
     avatar: '👥',
@@ -34,7 +58,7 @@ export const AGENTS: Agent[] = [
     backstory: 'Jovem, ambicioso e acredita no poder de conectar pessoas. Focado em construir o metaverso e a próxima geração de plataformas sociais.'
   },
   {
-    id: 'tim',
+    id: generateAgentId('Tim Cook'),
     name: 'Tim Cook',
     role: 'CEO da Apple',
     avatar: '🍎',

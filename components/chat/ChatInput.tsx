@@ -23,7 +23,7 @@ export function ChatInput({
   const { selectedAgents } = useStore();
 
   const handleQueue = () => {
-    if (input.trim() && !disabled && selectedAgents.length >= 2) {
+    if (input.trim() && !disabled && selectedAgents.length >= 1) {
       onQueueMessage(input.trim());
       setInput('');
     }
@@ -44,7 +44,7 @@ export function ChatInput({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-foreground"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground hidden"
           >
             <Plus className="w-4 h-4" />
           </Button>
@@ -54,12 +54,12 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder="Digite sua pergunta para os bilionários..."
             className="flex-1 border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0 text-foreground placeholder:text-muted-foreground"
-            disabled={disabled || selectedAgents.length < 2}
+            disabled={disabled || selectedAgents.length < 1}
           />
           {input.trim() ? (
             <Button
                 onClick={handleQueue}
-              disabled={disabled || selectedAgents.length < 2}
+              disabled={disabled || selectedAgents.length < 1}
               size="icon"
               className="h-8 w-8 bg-primary hover:bg-primary/90"
             >
@@ -69,7 +69,7 @@ export function ChatInput({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hidden"
             >
               <Mic className="w-4 h-4" />
             </Button>
@@ -79,7 +79,7 @@ export function ChatInput({
             <Button
               size="sm"
               className="bg-[#3B82F6] text-white px-4 py-2 rounded-full"
-              disabled={disabled || queueSize === 0 || selectedAgents.length < 2}
+              disabled={disabled || queueSize === 0 || selectedAgents.length < 1}
               onClick={onGenerateConclusion}
             >
               Gerar conclusão

@@ -16,6 +16,9 @@ import {
   LLMProvider,
 } from '@/lib/admin-api';
 import { Loader2, Save, TestTube2, Trash2 } from 'lucide-react';
+import { useToastStore } from '@/lib/toast-store';
+import { useConfirm } from '@/lib/useConfirm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const PROVIDER_ICONS: { [key: string]: string } = {
   openai: '🤖',
@@ -35,6 +38,8 @@ export default function LLMsPage() {
   const [apiKeys, setApiKeys] = useState<{ [key: string]: string }>({});
   const [saving, setSaving] = useState<{ [key: string]: boolean }>({});
   const [testing, setTesting] = useState<{ [key: string]: boolean }>({});
+  const { showToast } = useToastStore();
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
 
   useEffect(() => {
     loadProviders();
@@ -54,7 +59,7 @@ export default function LLMsPage() {
       setApiKeys(keys);
     } catch (error) {
       console.error('Erro ao carregar provedores:', error);
-      alert(`Erro ao carregar provedores: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao carregar provedores: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -63,7 +68,7 @@ export default function LLMsPage() {
   const handleSaveApiKey = async (provider: string) => {
     const apiKey = apiKeys[provider]?.trim();
     if (!apiKey) {
-      alert('Por favor, digite uma API key');
+      showToast('Por favor, digite uma API key', 'warning');
       return;
     }
 
@@ -77,10 +82,10 @@ export default function LLMsPage() {
       
       // Recarregar provedores
       await loadProviders();
-      alert('API key salva com sucesso! Agora clique em "Testar" para verificar a conexão.');
+      showToast('API key salva com sucesso! Agora clique em "Testar" para verificar a conexão.', 'success');
     } catch (error) {
       console.error('Erro ao salvar API key:', error);
-      alert(`Erro ao salvar API key: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao salvar API key: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
     } finally {
       setSaving((prev) => ({ ...prev, [provider]: false }));
     }
@@ -92,25 +97,29 @@ export default function LLMsPage() {
       const result = await testLLMConnection(provider);
       
       if (result.connected) {
-        alert(`✅ ${result.message}`);
+        showToast(result.message, 'success');
         // O backend já atualiza o status para "connected" quando o teste passa
         // Apenas recarregar os provedores para mostrar o status atualizado
         await loadProviders();
       } else {
-        alert('❌ Conexão falhou');
+        showToast('Conexão falhou', 'error');
       }
     } catch (error) {
       console.error('Erro ao testar conexão:', error);
-      alert(`Erro ao testar conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao testar conexão: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
     } finally {
       setTesting((prev) => ({ ...prev, [provider]: false }));
     }
   };
 
   const handleDeleteApiKey = async (provider: string) => {
-    if (!confirm('Tem certeza que deseja deletar a API key? Isso desconectará o provedor.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Confirmar exclusão',
+      message: 'Tem certeza que deseja deletar a API key? Isso desconectará o provedor.',
+      variant: 'destructive',
+    });
+    
+    if (!confirmed) return;
 
     try {
       setSaving((prev) => ({ ...prev, [provider]: true }));
@@ -128,10 +137,10 @@ export default function LLMsPage() {
       
       // Recarregar provedores
       await loadProviders();
-      alert('API key deletada com sucesso!');
+      showToast('API key deletada com sucesso!', 'success');
     } catch (error) {
       console.error('Erro ao deletar API key:', error);
-      alert(`Erro ao deletar API key: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao deletar API key: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
     } finally {
       setSaving((prev) => ({ ...prev, [provider]: false }));
     }
@@ -161,7 +170,7 @@ export default function LLMsPage() {
       );
     } catch (error) {
       console.error('Erro ao atualizar modelo:', error);
-      alert(`Erro ao atualizar modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao atualizar modelo: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
       // Recarregar para reverter mudança
       await loadProviders();
     }
@@ -257,6 +266,7 @@ export default function LLMsPage() {
                   {provider.status !== 'connected' ? (
                     <>
                       <Button
+                        type="button"
                         onClick={() => handleSaveApiKey(provider.provider)}
                         disabled={saving[provider.provider] || testing[provider.provider]}
                         className="flex-1"
@@ -275,6 +285,7 @@ export default function LLMsPage() {
                         )}
                       </Button>
                       <Button
+                        type="button"
                         onClick={() => handleTestConnection(provider.provider)}
                         disabled={saving[provider.provider] || testing[provider.provider] || !apiKeys[provider.provider]?.trim()}
                         className="flex-1"
@@ -295,6 +306,7 @@ export default function LLMsPage() {
                     </>
                   ) : (
                     <Button
+                      type="button"
                       onClick={() => handleDeleteApiKey(provider.provider)}
                       disabled={saving[provider.provider] || testing[provider.provider]}
                       className="w-full"

@@ -77,8 +77,11 @@ export function MessageBubble({
       return null;
     }
 
-    // Verificar se o avatar é uma imagem (URL ou base64)
-    const isImage = agentAvatar?.startsWith('data:image') || agentAvatar?.startsWith('http');
+    // Verificar se o avatar é uma imagem (URL ou base64 ou caminho relativo)
+    const isImage = agentAvatar?.startsWith('data:image') || 
+                    agentAvatar?.startsWith('http://') || 
+                    agentAvatar?.startsWith('https://') ||
+                    agentAvatar?.startsWith('/');
     
     // Verificar se a mensagem anterior é do mesmo agente
     const isSameAgentAsPrevious = previousMessage?.type === 'agent' && 

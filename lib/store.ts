@@ -11,6 +11,7 @@ interface AppState {
   selectedAgents: string[];
   numRodadas: number;
   isDebating: boolean;
+  searchQuery: string;
   
   // Actions
   setSelectedAgents: (agents: string[]) => void;
@@ -23,6 +24,7 @@ interface AppState {
   getCurrentChat: () => Chat | null;
   updateChatDebateId: (chatId: string, debateId: string) => void;
   updateChat: (chatId: string, updates: Partial<Chat>) => void;
+  setSearchQuery: (query: string) => void;
   // Folder actions
   setFolders: (folders: Folder[]) => void;
   addFolder: (folder: Folder) => void;
@@ -42,8 +44,13 @@ export const useStore = create<AppState>()(
       selectedAgents: [],
       numRodadas: 2,
       isDebating: false,
+      searchQuery: '',
 
-      setSelectedAgents: (agents) => set({ selectedAgents: agents }),
+      setSelectedAgents: (agents) => {
+        console.log('🔍 [DEBUG] Store.setSelectedAgents chamado com:', agents);
+        console.log('🔍 [DEBUG] Total de agentes:', agents.length);
+        set({ selectedAgents: agents });
+      },
       
       setNumRodadas: (rodadas) => set({ numRodadas: rodadas }),
       
@@ -91,6 +98,8 @@ export const useStore = create<AppState>()(
       },
       
       setIsDebating: (debating) => set({ isDebating: debating }),
+      
+      setSearchQuery: (query) => set({ searchQuery: query }),
       
       getCurrentChat: () => {
         const state = get();

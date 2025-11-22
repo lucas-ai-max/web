@@ -12,7 +12,7 @@ import { useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 
 export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pergunta: string) => void; folderName?: string }) {
-  const { selectedAgents, setSelectedAgents, numRodadas, setNumRodadas } = useStore();
+  const { selectedAgents, setSelectedAgents } = useStore();
   const [pergunta, setPergunta] = useState('');
   const [availableAgents, setAvailableAgents] = useState(AGENTS);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,15 +42,22 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
   const selectedAgentsData = availableAgents.filter(a => selectedAgents.includes(a.id));
 
   const toggleAgent = (agentId: string) => {
+    console.log('🔍 [DEBUG] toggleAgent chamado com agentId:', agentId);
+    console.log('🔍 [DEBUG] selectedAgents atual:', selectedAgents);
+    
     if (selectedAgents.includes(agentId)) {
-      setSelectedAgents(selectedAgents.filter(id => id !== agentId));
+      const newAgents = selectedAgents.filter(id => id !== agentId);
+      console.log('🔍 [DEBUG] Removendo agente. Novos agentes:', newAgents);
+      setSelectedAgents(newAgents);
     } else {
-      setSelectedAgents([...selectedAgents, agentId]);
+      const newAgents = [...selectedAgents, agentId];
+      console.log('🔍 [DEBUG] Adicionando agente. Novos agentes:', newAgents);
+      setSelectedAgents(newAgents);
     }
   };
 
   const handleSubmit = () => {
-    if (pergunta.trim() && selectedAgents.length >= 2) {
+    if (pergunta.trim() && selectedAgents.length >= 1) {
       onQueueMessage(pergunta);
       setPergunta('');
     }
@@ -160,26 +167,6 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
             )}
           </div>
 
-          {/* Seletor de Rodadas */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button className="flex items-center gap-1 bg-black/40 backdrop-blur-md border border-white/20 rounded-lg px-2 py-1.5 text-white hover:bg-black/60 text-sm">
-                <span>{numRodadas} Rodadas</span>
-                <ChevronDown className="w-3 h-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-[#2d2d2d] border-white/10">
-              {[1, 2, 3, 4, 5].map((num) => (
-                <button
-                  key={num}
-                  className="w-full text-left px-4 py-2 text-white hover:bg-white/5 text-sm"
-                  onClick={() => setNumRodadas(num)}
-                >
-                  {num} {num === 1 ? 'Rodada' : 'Rodadas'}
-                </button>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
         </div>
 
          {/* Input Principal */}
@@ -200,7 +187,7 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
            <button
              type="button"
              onClick={() => fileInputRef.current?.click()}
-             className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center hover:opacity-70 transition-opacity"
+             className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center justify-center hover:opacity-70 transition-opacity hidden"
            >
              <Plus 
                className="w-3 h-3 text-gray-600" 
@@ -219,12 +206,12 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                  handleSubmit();
                }
              }}
-             className="w-full bg-white py-2 pl-7 pr-11 text-black placeholder:text-gray-400 text-sm shadow-2xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
+             className="w-full bg-white py-2 pl-3 pr-11 text-black placeholder:text-gray-400 text-sm shadow-2xl focus:outline-none focus:ring-2 focus:ring-[#3B82F6]"
              style={{ borderRadius: '6px' }}
            />
            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 z-20">
              <Mic 
-               className="w-3 h-3 text-gray-600 pointer-events-none" 
+               className="w-3 h-3 text-gray-600 pointer-events-none hidden" 
                strokeWidth={1.5}
                fill="none"
              />
@@ -235,7 +222,7 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                  e.stopPropagation();
                  handleSubmit();
                }}
-               disabled={!pergunta.trim() || selectedAgents.length < 2}
+               disabled={!pergunta.trim() || selectedAgents.length < 1}
                className="disabled:opacity-30 disabled:cursor-not-allowed transition-opacity hover:opacity-70 cursor-pointer"
              >
                <Send 
@@ -247,9 +234,9 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
            </div>
          </div>
 
-        {selectedAgents.length < 2 && (
+        {selectedAgents.length < 1 && (
           <p className="text-white/70 text-xs mt-2">
-            Selecione pelo menos 2 mentores para iniciar o debate
+            Selecione pelo menos 1 mentor para iniciar o debate
           </p>
         )}
       </div>

@@ -269,6 +269,12 @@ export async function deleteAgentKnowledge(
 
 // ========== Dashboard Statistics ==========
 
+export interface RecentActivity {
+  type: 'agent' | 'debate' | 'llm';
+  message: string;
+  created_at: string;
+}
+
 export interface DashboardStats {
   total_agents: number;
   agents_this_month: number;
@@ -277,6 +283,7 @@ export interface DashboardStats {
   llms_count: number;
   llms_list: string[];
   api_usage_percent: number;
+  recent_activities?: RecentActivity[];
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
@@ -300,20 +307,35 @@ export async function uploadAgentKnowledgeFile(
     formData.append('title', title);
   }
 
-  const response = await fetch(
-    `${API_BASE_URL}/api/admin/agents/${agentId}/knowledge/upload`,
-    {
-      method: 'POST',
-      body: formData,
+  // Criar AbortController para timeout de 10 minutos (600000ms) para arquivos grandes
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 600000); // 10 minutos
+
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/admin/agents/${agentId}/knowledge/upload`,
+      {
+        method: 'POST',
+        body: formData,
+        signal: controller.signal,
+      }
+    );
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Erro ao fazer upload do arquivo: ${errorText || response.statusText}`);
     }
-  );
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Erro ao fazer upload do arquivo: ${errorText || response.statusText}`);
+    return response.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('Upload cancelado: tempo limite excedido. Tente novamente com um arquivo menor ou verifique sua conexão.');
+    }
+    throw error;
   }
-
-  return response.json();
 }
 
 // ========== LLM Providers ==========

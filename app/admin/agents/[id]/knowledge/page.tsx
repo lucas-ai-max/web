@@ -12,6 +12,9 @@ import { addAgentKnowledge, listAgentKnowledge, deleteAgentKnowledge, uploadAgen
 import { AgentKnowledge } from '@/lib/admin-api';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
+import { useConfirm } from '@/lib/useConfirm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useToastStore } from '@/lib/toast-store';
 
 export default function AgentKnowledgePage() {
   const params = useParams();
@@ -25,6 +28,8 @@ export default function AgentKnowledgePage() {
   const [loading, setLoading] = useState(false);
   const [loadingFile, setLoadingFile] = useState(false);
   const [loadingList, setLoadingList] = useState(true);
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
+  const { showToast } = useToastStore();
 
   useEffect(() => {
     loadKnowledge();
@@ -63,14 +68,20 @@ export default function AgentKnowledgePage() {
   };
 
   const handleDelete = async (knowledgeId: string) => {
-    if (!confirm('Tem certeza que deseja deletar este documento?')) return;
+    const confirmed = await confirm({
+      title: 'Confirmar exclusão',
+      message: 'Tem certeza que deseja deletar este documento?',
+      variant: 'destructive',
+    });
+    
+    if (!confirmed) return;
 
     try {
       await deleteAgentKnowledge(agentId, knowledgeId);
       loadKnowledge();
     } catch (error) {
       console.error('Erro ao deletar:', error);
-      alert(`Erro ao deletar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      showToast(`Erro ao deletar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
     }
   };
 
@@ -87,9 +98,9 @@ export default function AgentKnowledgePage() {
         return;
       }
       
-      // Validar tamanho (máximo 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        alert('Arquivo muito grande. Tamanho máximo: 10MB');
+      // Validar tamanho (máximo 100MB)
+      if (file.size > 100 * 1024 * 1024) {
+        alert('Arquivo muito grande. Tamanho máximo: 100MB');
         e.target.value = '';
         return;
       }
@@ -127,7 +138,43 @@ export default function AgentKnowledgePage() {
   };
 
   return (
-    <div className="p-8">
+    <div className="p-8 relative">
+      {/* Overlay de carregamento durante upload */}
+      {loadingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xl">
+          <div className="bg-[#1F1F1F] border border-white/10 rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 border-4 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-2">Processando Arquivo</h3>
+                <p className="text-white/60 text-sm">
+                  {selectedFile && (
+                    <>
+                      Enviando <strong>{selectedFile.name}</strong>...
+                    </>
+                  )}
+                </p>
+                <p className="text-white/40 text-xs mt-2">
+                  {selectedFile && `Tamanho: ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`}
+                </p>
+                <p className="text-white/40 text-xs mt-4">
+                  Aguarde enquanto o arquivo é processado e adicionado à base de conhecimento do agente.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-white/60 text-sm">
+                <div className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '200ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '400ms' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="mb-6">
         <Link href="/admin/agents">
           <Button variant="ghost" className="mb-4">
@@ -172,7 +219,7 @@ export default function AgentKnowledgePage() {
                 onChange={(e) => setContent(e.target.value)}
                 className="bg-background"
               />
-              <Button onClick={handleAdd} disabled={loading || !title.trim() || !content.trim()}>
+              <Button type="button" onClick={handleAdd} disabled={loading || !title.trim() || !content.trim()}>
                 <Plus className="mr-2 h-4 w-4" />
                 {loading ? 'Adicionando...' : 'Adicionar Documento'}
               </Button>
@@ -202,7 +249,7 @@ export default function AgentKnowledgePage() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Formatos suportados: TXT, PDF, DOCX (máximo 10MB)
+                  Formatos suportados: TXT, PDF, DOCX (máximo 100MB)
                 </p>
               </div>
               
@@ -216,6 +263,7 @@ export default function AgentKnowledgePage() {
               />
               
               <Button 
+                type="button"
                 onClick={handleUploadFile} 
                 disabled={loadingFile || !selectedFile}
                 className="w-full"
@@ -268,20 +316,26 @@ export default function AgentKnowledgePage() {
                 <Button
                   variant="destructive"
                   size="sm"
+                  type="button"
                   onClick={() => handleDelete(doc.id)}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap max-h-60 overflow-y-auto">
-                  {doc.content}
-                </p>
-              </CardContent>
             </Card>
           ))}
         </div>
       )}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.options?.title || 'Confirmar'}
+        message={confirmState.options?.message || ''}
+        confirmText={confirmState.options?.confirmText || 'Confirmar'}
+        cancelText={confirmState.options?.cancelText || 'Cancelar'}
+        variant={confirmState.options?.variant || 'default'}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

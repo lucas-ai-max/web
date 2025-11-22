@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Save, Check, Trash2, Upload, X } from 'lucide-react';
+import { ArrowLeft, Save, Check, Trash2, Upload, X, Plus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -16,7 +16,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lightbulb, Info } from 'lucide-react';
 import { FormField } from './FormField';
-import { getAgent, createAgent, updateAgent, deleteAgent, uploadAvatar } from '@/lib/admin-api';
+import { getAgent, createAgent, updateAgent, deleteAgent, uploadAvatar, addAgentKnowledge, listAgentKnowledge, deleteAgentKnowledge, uploadAgentKnowledgeFile, AgentKnowledge } from '@/lib/admin-api';
+import { Separator } from '@/components/ui/separator';
+import { useToastStore } from '@/lib/toast-store';
+import { useConfirm } from '@/lib/useConfirm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface AgentFormProps {
   agentId?: string;
@@ -25,6 +29,8 @@ interface AgentFormProps {
 export function AgentForm({ agentId }: AgentFormProps) {
   const router = useRouter();
   const isEditing = !!agentId;
+  const { showToast } = useToastStore();
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -44,9 +50,20 @@ export function AgentForm({ agentId }: AgentFormProps) {
     description: '',
   });
 
+  // Estados para Base de Conhecimento
+  const [knowledge, setKnowledge] = useState<AgentKnowledge[]>([]);
+  const [knowledgeTitle, setKnowledgeTitle] = useState('');
+  const [knowledgeContent, setKnowledgeContent] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileTitle, setFileTitle] = useState('');
+  const [loadingKnowledge, setLoadingKnowledge] = useState(false);
+  const [loadingFile, setLoadingFile] = useState(false);
+  const [loadingKnowledgeList, setLoadingKnowledgeList] = useState(false);
+
   useEffect(() => {
     if (isEditing && agentId) {
       loadAgent();
+      loadKnowledge();
     }
   }, [agentId, isEditing]);
 
@@ -131,18 +148,121 @@ export function AgentForm({ agentId }: AgentFormProps) {
       router.push('/admin/agents');
     } catch (error) {
       console.error('Erro ao salvar agente:', error);
-      alert('Erro ao salvar agente. Verifique o console para mais detalhes.');
+      showToast('Erro ao salvar agente. Verifique o console para mais detalhes.', 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadKnowledge = async () => {
+    if (!agentId) return;
+    try {
+      setLoadingKnowledgeList(true);
+      const data = await listAgentKnowledge(agentId);
+      setKnowledge(data);
+    } catch (error) {
+      console.error('Erro ao carregar conhecimento:', error);
+    } finally {
+      setLoadingKnowledgeList(false);
+    }
+  };
+
+  const handleAddKnowledge = async () => {
+    if (!agentId || !knowledgeTitle.trim() || !knowledgeContent.trim()) {
+      showToast('Por favor, preencha título e conteúdo', 'warning');
+      return;
+    }
+
+    setLoadingKnowledge(true);
+    try {
+      await addAgentKnowledge(agentId, knowledgeTitle, knowledgeContent, 'text');
+      setKnowledgeTitle('');
+      setKnowledgeContent('');
+      loadKnowledge();
+    } catch (error) {
+      console.error('Erro ao adicionar conhecimento:', error);
+      showToast(`Erro ao adicionar conhecimento: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
+    } finally {
+      setLoadingKnowledge(false);
+    }
+  };
+
+  const handleDeleteKnowledge = async (knowledgeId: string) => {
+    const confirmed = await confirm({
+      title: 'Confirmar exclusão',
+      message: 'Tem certeza que deseja deletar este documento?',
+      variant: 'destructive',
+    });
+    
+    if (!confirmed) return;
+
+    try {
+      await deleteAgentKnowledge(agentId!, knowledgeId);
+      loadKnowledge();
+    } catch (error) {
+      console.error('Erro ao deletar:', error);
+      showToast(`Erro ao deletar: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
+    }
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const allowedTypes = ['.txt', '.pdf', '.docx'];
+      const fileExt = '.' + file.name.split('.').pop()?.toLowerCase();
+      
+      if (!allowedTypes.includes(fileExt)) {
+        showToast(`Formato de arquivo não suportado. Formatos permitidos: ${allowedTypes.join(', ')}`, 'error');
+        e.target.value = '';
+        return;
+      }
+      
+      if (file.size > 100 * 1024 * 1024) {
+        showToast('Arquivo muito grande. Tamanho máximo: 100MB', 'error');
+        e.target.value = '';
+        return;
+      }
+      
+      setSelectedFile(file);
+      if (!fileTitle.trim()) {
+        setFileTitle(file.name.replace(/\.[^/.]+$/, ''));
+      }
+    }
+  };
+
+  const handleUploadFile = async () => {
+    if (!agentId || !selectedFile) {
+      showToast('Por favor, selecione um arquivo', 'warning');
+      return;
+    }
+
+    setLoadingFile(true);
+    try {
+      await uploadAgentKnowledgeFile(agentId, selectedFile, fileTitle || undefined);
+      setSelectedFile(null);
+      setFileTitle('');
+      const fileInput = document.getElementById('knowledge-file-upload') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      loadKnowledge();
+      showToast('Arquivo enviado com sucesso!', 'success');
+    } catch (error) {
+      console.error('Erro ao fazer upload:', error);
+      showToast(`Erro ao fazer upload: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
+    } finally {
+      setLoadingFile(false);
     }
   };
 
   const handleDelete = async () => {
     if (!agentId || !isEditing) return;
     
-    if (!confirm('Tem certeza que deseja deletar este agente? Esta ação não pode ser desfeita.')) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: 'Confirmar exclusão',
+      message: 'Tem certeza que deseja deletar este agente? Esta ação não pode ser desfeita.',
+      variant: 'destructive',
+    });
+    
+    if (!confirmed) return;
 
     try {
       setLoading(true);
@@ -150,7 +270,7 @@ export function AgentForm({ agentId }: AgentFormProps) {
       router.push('/admin/agents');
     } catch (error) {
       console.error('Erro ao deletar agente:', error);
-      alert('Erro ao deletar agente. Verifique o console para mais detalhes.');
+      showToast('Erro ao deletar agente. Verifique o console para mais detalhes.', 'error');
     } finally {
       setLoading(false);
     }
@@ -162,6 +282,42 @@ export function AgentForm({ agentId }: AgentFormProps) {
 
   return (
     <form onSubmit={handleSubmit}>
+      {/* Overlay de carregamento durante upload */}
+      {loadingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xl">
+          <div className="bg-[#1F1F1F] border border-white/10 rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl">
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 border-4 border-[#3B82F6] border-t-transparent rounded-full animate-spin" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-white mb-2">Processando Arquivo</h3>
+                <p className="text-white/60 text-sm">
+                  {selectedFile && (
+                    <>
+                      Enviando <strong>{selectedFile.name}</strong>...
+                    </>
+                  )}
+                </p>
+                <p className="text-white/40 text-xs mt-2">
+                  {selectedFile && `Tamanho: ${(selectedFile.size / 1024 / 1024).toFixed(2)} MB`}
+                </p>
+                <p className="text-white/40 text-xs mt-4">
+                  Aguarde enquanto o arquivo é processado e adicionado à base de conhecimento do agente.
+                </p>
+              </div>
+              <div className="flex items-center justify-center gap-2 text-white/60 text-sm">
+                <div className="flex gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '200ms' }} />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#3B82F6] animate-bounce" style={{ animationDelay: '400ms' }} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center gap-4 mb-6">
         <Link href="/admin/agents">
           <Button variant="ghost" size="icon">
@@ -182,13 +338,6 @@ export function AgentForm({ agentId }: AgentFormProps) {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Preview</CardTitle>
-                {isEditing && agentId && (
-                  <Link href={`/admin/agents/${agentId}/knowledge`}>
-                    <Button variant="outline" size="sm" className="text-xs">
-                      Base de Conhecimento
-                    </Button>
-                  </Link>
-                )}
               </div>
             </CardHeader>
             <CardContent>
@@ -271,10 +420,11 @@ export function AgentForm({ agentId }: AgentFormProps) {
         {/* Form */}
         <div className="lg:col-span-2">
           <Tabs defaultValue="basic" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className={`grid w-full ${isEditing ? 'grid-cols-4' : 'grid-cols-3'}`}>
               <TabsTrigger value="basic">Básico</TabsTrigger>
               <TabsTrigger value="llm">LLM</TabsTrigger>
               <TabsTrigger value="prompts">Prompts</TabsTrigger>
+              {isEditing && <TabsTrigger value="knowledge">Base de Conhecimento</TabsTrigger>}
             </TabsList>
 
             <TabsContent value="basic" className="space-y-4 mt-6">
@@ -301,13 +451,13 @@ export function AgentForm({ agentId }: AgentFormProps) {
                       if (file) {
                         // Validar tamanho (máx 5MB)
                         if (file.size > 5 * 1024 * 1024) {
-                          alert('A imagem deve ter no máximo 5MB');
+                          showToast('A imagem deve ter no máximo 5MB', 'error');
                           return;
                         }
                         
                         // Validar tipo
                         if (!file.type.startsWith('image/')) {
-                          alert('Por favor, selecione uma imagem válida');
+                          showToast('Por favor, selecione uma imagem válida', 'error');
                           return;
                         }
                         
@@ -319,7 +469,7 @@ export function AgentForm({ agentId }: AgentFormProps) {
                           setFormData({ ...formData, avatar: result.url });
                         } catch (error) {
                           console.error('Erro ao fazer upload:', error);
-                          alert(`Erro ao fazer upload da imagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+                          showToast(`Erro ao fazer upload da imagem: ${error instanceof Error ? error.message : 'Erro desconhecido'}`, 'error');
                         } finally {
                           setLoading(false);
                         }
@@ -554,6 +704,151 @@ export function AgentForm({ agentId }: AgentFormProps) {
               </FormField>
             </TabsContent>
 
+            {isEditing && agentId && (
+              <TabsContent value="knowledge" className="space-y-4 mt-6">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Adicione documentos e informações que este agente usará durante os debates.
+                  </AlertDescription>
+                </Alert>
+
+                <Card className="bg-[#2d2d2d] border-white/10">
+                  <CardHeader>
+                    <CardTitle>Adicionar Novo Documento</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <Tabs defaultValue="text" className="w-full">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="text">
+                          <FileText className="mr-2 h-4 w-4" />
+                          Texto
+                        </TabsTrigger>
+                        <TabsTrigger value="file">
+                          <Upload className="mr-2 h-4 w-4" />
+                          Arquivo
+                        </TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="text" className="space-y-4 mt-4">
+                        <FormField label="Título do Documento">
+                          <Input
+                            placeholder="Ex: 'História da Empresa', 'Princípios Fundamentais'"
+                            value={knowledgeTitle}
+                            onChange={(e) => setKnowledgeTitle(e.target.value)}
+                          />
+                        </FormField>
+                        <FormField label="Conteúdo">
+                          <Textarea
+                            placeholder="Conteúdo do documento..."
+                            rows={10}
+                            value={knowledgeContent}
+                            onChange={(e) => setKnowledgeContent(e.target.value)}
+                          />
+                        </FormField>
+                        <Button 
+                          type="button"
+                          onClick={handleAddKnowledge} 
+                          disabled={loadingKnowledge || !knowledgeTitle.trim() || !knowledgeContent.trim()}
+                        >
+                          <Plus className="mr-2 h-4 w-4" />
+                          {loadingKnowledge ? 'Adicionando...' : 'Adicionar Documento'}
+                        </Button>
+                      </TabsContent>
+                      
+                      <TabsContent value="file" className="space-y-4 mt-4">
+                        <FormField label="Selecionar Arquivo">
+                          <div className="flex items-center gap-4">
+                            <Input
+                              id="knowledge-file-upload"
+                              type="file"
+                              accept=".txt,.pdf,.docx"
+                              onChange={handleFileSelect}
+                              className="cursor-pointer"
+                            />
+                            {selectedFile && (
+                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <FileText className="h-4 w-4" />
+                                <span>{selectedFile.name}</span>
+                                <span className="text-xs">
+                                  ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Formatos suportados: TXT, PDF, DOCX (máximo 100MB)
+                          </p>
+                        </FormField>
+                        
+                        <Separator />
+                        
+                        <FormField label="Título do documento (opcional)">
+                          <Input
+                            placeholder="Usará nome do arquivo se não preenchido"
+                            value={fileTitle}
+                            onChange={(e) => setFileTitle(e.target.value)}
+                          />
+                        </FormField>
+                        
+                        <Button 
+                          type="button"
+                          onClick={handleUploadFile} 
+                          disabled={loadingFile || !selectedFile}
+                          className="w-full"
+                        >
+                          <Upload className="mr-2 h-4 w-4" />
+                          {loadingFile ? 'Enviando...' : 'Enviar Arquivo'}
+                        </Button>
+                      </TabsContent>
+                    </Tabs>
+                  </CardContent>
+                </Card>
+
+                <div className="space-y-4">
+                  <h3 className="text-xl font-semibold">
+                    Documentos ({knowledge.length})
+                  </h3>
+                  
+                  {loadingKnowledgeList ? (
+                    <div className="text-center py-12">
+                      <p className="text-muted-foreground">Carregando documentos...</p>
+                    </div>
+                  ) : knowledge.length === 0 ? (
+                    <Card className="bg-[#2d2d2d] border-white/10">
+                      <CardContent className="py-12 text-center">
+                        <p className="text-muted-foreground mb-4">Nenhum documento adicionado ainda</p>
+                        <p className="text-sm text-muted-foreground">
+                          Adicione documentos acima para enriquecer a base de conhecimento deste agente
+                        </p>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    knowledge.map((doc) => (
+                      <Card key={doc.id} className="bg-[#2d2d2d] border-white/10">
+                        <CardHeader className="flex flex-row justify-between items-start">
+                          <div className="flex-1">
+                            <CardTitle className="text-lg mb-2">{doc.title}</CardTitle>
+                            <p className="text-xs text-muted-foreground">
+                              Adicionado em {new Date(doc.created_at).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            type="button"
+                            onClick={() => handleDeleteKnowledge(doc.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </CardHeader>
+                      </Card>
+                    ))
+                  )}
+                </div>
+              </TabsContent>
+            )}
+
           </Tabs>
 
           <div className="flex justify-between items-center mt-8 pt-6 border-t">
@@ -591,6 +886,16 @@ export function AgentForm({ agentId }: AgentFormProps) {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.options?.title || 'Confirmar'}
+        message={confirmState.options?.message || ''}
+        confirmText={confirmState.options?.confirmText || 'Confirmar'}
+        cancelText={confirmState.options?.cancelText || 'Cancelar'}
+        variant={confirmState.options?.variant || 'default'}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </form>
   );
 }

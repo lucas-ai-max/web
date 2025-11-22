@@ -10,6 +10,8 @@ import { useStore } from '@/lib/store';
 import { CreateFolderDialog } from './CreateFolderDialog';
 import { Toast } from '@/components/ui/toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { useConfirm } from '@/lib/useConfirm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export function Sidebar() {
   const router = useRouter();
@@ -23,7 +25,8 @@ export function Sidebar() {
     moveChatToFolder,
     deleteFolder,
     deleteChat,
-    currentChatId
+    currentChatId,
+    searchQuery
   } = useStore();
   const [isFoldersExpanded, setIsFoldersExpanded] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -32,6 +35,7 @@ export function Sidebar() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [menuOpenFolderId, setMenuOpenFolderId] = useState<string | null>(null);
   const [menuOpenChatId, setMenuOpenChatId] = useState<string | null>(null);
+  const { confirm, confirmState, handleConfirm, handleCancel } = useConfirm();
 
   const handleNewChat = () => {
     setCurrentChat(null);
@@ -47,26 +51,44 @@ export function Sidebar() {
     router.push(`/folder/${folderId}`);
   };
 
-  const handleDeleteChat = (chatId: string) => {
-    if (confirm('Deseja excluir este chat?')) {
-      deleteChat(chatId);
+  const handleDeleteChat = async (chatId: string) => {
+    const confirmed = await confirm({
+      title: 'Confirmar exclusão',
+      message: 'Deseja excluir este chat?',
+      variant: 'destructive',
+    });
+    
+    if (!confirmed) {
+      setMenuOpenChatId(null);
+      return;
     }
+    
+    deleteChat(chatId);
     setMenuOpenChatId(null);
   };
 
-  const handleDeleteFolder = (folderId: string) => {
+  const handleDeleteFolder = async (folderId: string) => {
     const folder = folders.find(f => f.id === folderId);
     if (folder) {
       const folderChats = chats.filter(chat => chat.folderId === folderId);
-      if (confirm(`Tem certeza que deseja excluir a pasta "${folder.name}"? ${folderChats.length > 0 ? `Os ${folderChats.length} chat(s) serão movidos para o geral.` : ''}`)) {
-        deleteFolder(folderId);
-        setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
+      const confirmed = await confirm({
+        title: 'Confirmar exclusão',
+        message: `Tem certeza que deseja excluir a pasta "${folder.name}"? ${folderChats.length > 0 ? `Os ${folderChats.length} chat(s) serão movidos para o geral.` : ''}`,
+        variant: 'destructive',
+      });
+      
+      if (!confirmed) {
         setMenuOpenFolderId(null);
-        // Se a pasta excluída estava selecionada, voltar para a home
-        if (selectedFolderId === folderId) {
-          setSelectedFolder(null);
-          router.push('/');
-        }
+        return;
+      }
+      
+      deleteFolder(folderId);
+      setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
+      setMenuOpenFolderId(null);
+      // Se a pasta excluída estava selecionada, voltar para a home
+      if (selectedFolderId === folderId) {
+        setSelectedFolder(null);
+        router.push('/');
       }
     }
   };
@@ -131,8 +153,8 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-[280px] h-screen bg-black/10 backdrop-blur-[30px] border-r border-white/10 flex flex-col fixed left-0 top-0 z-50">
-      <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+    <div className="w-[280px] h-screen bg-black/10 backdrop-blur-[30px] border-r border-white/10 flex flex-col fixed left-0 top-0 z-50 overflow-hidden">
+      <div className="p-6 flex flex-col gap-4 overflow-y-auto overflow-x-hidden custom-scrollbar min-w-0">
         {/* Botão Iniciar nova conversa */}
         <Button
           className="w-full bg-[#3B82F6] hover:bg-[#2563EB] rounded-lg py-3 px-4 text-white font-medium mb-6"
@@ -196,9 +218,11 @@ export function Sidebar() {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="bg-[#2d2d2d] border-white/10 w-40">
                           <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteFolder(folder.id);
+                            onSelect={(e) => {
+                              e.preventDefault();
+                              setTimeout(() => {
+                                handleDeleteFolder(folder.id);
+                              }, 0);
                             }}
                             className="text-red-500 hover:bg-red-500/20 cursor-pointer"
                           >
@@ -223,15 +247,36 @@ export function Sidebar() {
           </div>
 
           <div className="space-y-1">
-            {chats.filter(chat => !chat.folderId).length > 0 ? (
-              chats
-                .filter(chat => !chat.folderId)
-              .map((chat) => {
+            {(() => {
+              // Filtrar chats por pasta e busca
+              let filteredChats = chats.filter(chat => !chat.folderId);
+              
+              // Aplicar filtro de busca se houver termo (buscar também em pastas)
+              if (searchQuery.trim()) {
+                const query = searchQuery.toLowerCase().trim();
+                filteredChats = filteredChats.filter(chat =>
+                  chat.title.toLowerCase().includes(query)
+                );
+                
+                // Também incluir chats de pastas que correspondem à busca
+                const chatsInFolders = chats.filter(chat => {
+                  if (!chat.folderId) return false;
+                  const folder = folders.find(f => f.id === chat.folderId);
+                  return chat.title.toLowerCase().includes(query) || 
+                         (folder && folder.name.toLowerCase().includes(query));
+                });
+                
+                // Combinar resultados
+                filteredChats = [...filteredChats, ...chatsInFolders];
+              }
+              
+              return filteredChats.length > 0 ? (
+                filteredChats.map((chat) => {
                 const isActive = currentChatId === chat.id;
                 return (
                   <div
                     key={chat.id}
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-2 min-w-0"
                   >
                     <button
                       draggable
@@ -241,7 +286,7 @@ export function Sidebar() {
                         setCurrentChat(chat.id);
                         router.push('/');
                       }}
-                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer ${
+                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer min-w-0 ${
                         isActive
                           ? 'bg-white/10 text-white ring-1 ring-white/30 shadow-lg'
                           : 'text-[#9CA3AF] hover:text-white hover:bg-[rgba(59,130,246,0.1)]'
@@ -251,8 +296,10 @@ export function Sidebar() {
                           : ''
                       }`}
                     >
-                      <img src="/chat-criado.png" alt={chat.title} className="w-3 h-3" />
-                      <span className="truncate">{chat.title}</span>
+                      <img src="/chat-criado.png" alt={chat.title} className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate text-left min-w-0 max-w-full" title={chat.title}>
+                        {chat.title.length > 30 ? `${chat.title.substring(0, 30)}...` : chat.title}
+                      </span>
                     </button>
                     <DropdownMenu
                       open={menuOpenChatId === chat.id}
@@ -270,9 +317,11 @@ export function Sidebar() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-[#2d2d2d] border-white/10 w-40">
                         <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteChat(chat.id);
+                          onSelect={(e) => {
+                            e.preventDefault();
+                            setTimeout(() => {
+                              handleDeleteChat(chat.id);
+                            }, 0);
                           }}
                           className="text-red-500 hover:bg-red-500/20 cursor-pointer"
                         >
@@ -286,9 +335,10 @@ export function Sidebar() {
               })
             ) : (
               <div className="px-3 py-2 text-xs text-[#9CA3AF]/60">
-                Nenhum chat ainda
+                {searchQuery.trim() ? 'Nenhum chat encontrado' : 'Nenhum chat ainda'}
               </div>
-            )}
+            );
+            })()}
           </div>
         </div>
       </div>
@@ -306,6 +356,16 @@ export function Sidebar() {
           onClose={() => setToastMessage(null)}
         />
       )}
+      <ConfirmDialog
+        isOpen={confirmState.isOpen}
+        title={confirmState.options?.title || 'Confirmar'}
+        message={confirmState.options?.message || ''}
+        confirmText={confirmState.options?.confirmText || 'Confirmar'}
+        cancelText={confirmState.options?.cancelText || 'Cancelar'}
+        variant={confirmState.options?.variant || 'default'}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
     </div>
   );
 }

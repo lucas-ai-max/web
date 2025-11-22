@@ -18,11 +18,11 @@ export function EmptyState() {
             Selecione os agentes e inicie o debate
           </h2>
           <p className="text-muted-foreground">
-            Escolha pelo menos 2 bilionários para começar
+            Escolha pelo menos 1 bilionário para começar
           </p>
         </div>
 
-        {selectedAgents.length < 2 && (
+        {selectedAgents.length < 1 && (
           <Button
             onClick={() => setAgentSelectorOpen(true)}
             className="bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"

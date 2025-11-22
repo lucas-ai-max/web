@@ -29,9 +29,12 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
   useEffect(() => {
     // Buscar agentes da API ao abrir o modal
     if (open) {
+      console.log('🔍 [DEBUG] AgentSelector aberto. selectedAgents:', selectedAgents);
+      // Sincronizar tempSelected com selectedAgents quando abrir
+      setTempSelected(selectedAgents);
       loadAgents();
     }
-  }, [open]);
+  }, [open, selectedAgents]);
 
   const loadAgents = async () => {
     try {
@@ -70,10 +73,17 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
   };
 
   const handleConfirm = () => {
-    if (tempSelected.length >= 2) {
+    console.log('🔍 [DEBUG] AgentSelector.handleConfirm chamado');
+    console.log('🔍 [DEBUG] tempSelected:', tempSelected);
+    console.log('🔍 [DEBUG] selectedAgents atual:', selectedAgents);
+    
+    if (tempSelected.length >= 1) {
+      console.log('🔍 [DEBUG] Salvando agentes selecionados:', tempSelected);
       setSelectedAgents(tempSelected);
       setNumRodadas(tempRodadas);
       onOpenChange(false);
+    } else {
+      console.log('🔍 [DEBUG] Nenhum agente selecionado, não salvando');
     }
   };
 
@@ -89,7 +99,7 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
         <DialogHeader>
           <DialogTitle className="text-foreground">Selecionar Agentes</DialogTitle>
           <DialogDescription className="text-muted-foreground">
-            Escolha pelo menos 2 bilionários para participar do debate
+            Escolha pelo menos 1 bilionário para participar do debate
           </DialogDescription>
         </DialogHeader>
 
@@ -160,7 +170,7 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
             </Button>
             <Button
               onClick={handleConfirm}
-              disabled={tempSelected.length < 2}
+              disabled={tempSelected.length < 1}
             >
               Confirmar
             </Button>
