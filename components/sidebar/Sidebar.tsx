@@ -82,13 +82,13 @@ export function Sidebar() {
         return;
       }
       
-      deleteFolder(folderId);
-      setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
-      setMenuOpenFolderId(null);
-      // Se a pasta excluída estava selecionada, voltar para a home
-      if (selectedFolderId === folderId) {
-        setSelectedFolder(null);
-        router.push('/');
+        deleteFolder(folderId);
+        setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
+        setMenuOpenFolderId(null);
+        // Se a pasta excluída estava selecionada, voltar para a home
+        if (selectedFolderId === folderId) {
+          setSelectedFolder(null);
+          router.push('/');
       }
     }
   };
@@ -221,7 +221,7 @@ export function Sidebar() {
                             onSelect={(e) => {
                               e.preventDefault();
                               setTimeout(() => {
-                                handleDeleteFolder(folder.id);
+                              handleDeleteFolder(folder.id);
                               }, 0);
                             }}
                             className="text-red-500 hover:bg-red-500/20 cursor-pointer"
@@ -279,9 +279,9 @@ export function Sidebar() {
                     className="flex items-center gap-2 min-w-0"
                   >
                     <button
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, chat.id)}
-                      onDragEnd={handleDragEnd}
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, chat.id)}
+                    onDragEnd={handleDragEnd}
                       onClick={() => {
                         setCurrentChat(chat.id);
                         router.push('/');
@@ -291,11 +291,11 @@ export function Sidebar() {
                           ? 'bg-white/10 text-white ring-1 ring-white/30 shadow-lg'
                           : 'text-[#9CA3AF] hover:text-white hover:bg-[rgba(59,130,246,0.1)]'
                       } ${
-                        draggedChatId === chat.id
-                          ? 'opacity-30 scale-95 blur-sm'
-                          : ''
-                      }`}
-                    >
+                      draggedChatId === chat.id 
+                        ? 'opacity-30 scale-95 blur-sm'
+                        : ''
+                    }`}
+                  >
                       <img src="/chat-criado.png" alt={chat.title} className="w-3 h-3 flex-shrink-0" />
                       <span className="truncate text-left min-w-0 max-w-full" title={chat.title}>
                         {chat.title.length > 30 ? `${chat.title.substring(0, 30)}...` : chat.title}
@@ -313,7 +313,7 @@ export function Sidebar() {
                           className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
                         >
                           <MoreVertical className="w-4 h-4" />
-                        </button>
+                  </button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent className="bg-[#2d2d2d] border-white/10 w-40">
                         <DropdownMenuItem

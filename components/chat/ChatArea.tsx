@@ -43,16 +43,16 @@ export function ChatArea() {
   // Carregar agentes da API
   useEffect(() => {
     import('@/lib/api').then(({ getAgents }) => {
-      getAgents()
-        .then(response => {
-          const formattedAgents = response.agentes.map((agent: any) => ({
+    getAgents()
+      .then(response => {
+        const formattedAgents = response.agentes.map((agent: any) => ({
             id: generateAgentId(agent.name, agent.id), // Gerar ID único se necessário
-            name: agent.name,
-            role: agent.role,
-            avatar: agent.avatar || '👤',
-            color: agent.color || '#8b5cf6',
-            backstory: agent.backstory || ''
-          }));
+          name: agent.name,
+          role: agent.role,
+          avatar: agent.avatar || '👤',
+          color: agent.color || '#8b5cf6',
+          backstory: agent.backstory || ''
+        }));
           // Combinar com lista hardcoded (prioridade para agentes da API)
           // Remover duplicatas baseadas no nome (mesmo nome = mesmo agente)
           const allAgentsMap = new Map<string, typeof formattedAgents[0]>();
@@ -71,10 +71,10 @@ export function ChatArea() {
           });
           
           setAvailableAgents(Array.from(allAgentsMap.values()));
-        })
+      })
         .catch(() => {
-          setAvailableAgents(AGENTS);
-        });
+        setAvailableAgents(AGENTS);
+      });
     });
   }, []);
 
@@ -94,8 +94,8 @@ export function ChatArea() {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(selectedId)) {
         return selectedId;
-      }
-      
+  }
+
       // Tentar encontrar o agente por ID antigo ou nome
       const agent = availableAgents.find(a => 
         a.id === selectedId || 
@@ -278,7 +278,7 @@ function MessageBubble({ message, onCopy }: { message: Message; onCopy: (text: s
             {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-      </div>
+                  </div>
     );
   }
 
@@ -323,7 +323,7 @@ function MessageBubble({ message, onCopy }: { message: Message; onCopy: (text: s
             return (
               <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/20">
                 <span className="text-lg">{message.agentAvatar}</span>
-              </div>
+                  </div>
             );
           } else {
             // Sem avatar - mostrar inicial do nome
