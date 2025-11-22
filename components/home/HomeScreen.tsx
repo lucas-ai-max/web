@@ -11,7 +11,7 @@ import { getAgents } from '@/lib/api';
 import { useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 
-export function HomeScreen({ onStartDebate, folderName }: { onStartDebate: (pergunta: string) => void; folderName?: string }) {
+export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pergunta: string) => void; folderName?: string }) {
   const { selectedAgents, setSelectedAgents, numRodadas, setNumRodadas } = useStore();
   const [pergunta, setPergunta] = useState('');
   const [availableAgents, setAvailableAgents] = useState(AGENTS);
@@ -51,7 +51,7 @@ export function HomeScreen({ onStartDebate, folderName }: { onStartDebate: (perg
 
   const handleSubmit = () => {
     if (pergunta.trim() && selectedAgents.length >= 2) {
-      onStartDebate(pergunta);
+      onQueueMessage(pergunta);
       setPergunta('');
     }
   };

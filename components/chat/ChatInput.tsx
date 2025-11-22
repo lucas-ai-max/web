@@ -7,17 +7,24 @@ import { Plus, Send, Mic } from 'lucide-react';
 import { useStore } from '@/lib/store';
 
 interface ChatInputProps {
-  onSendMessage: (message: string) => void;
+  onQueueMessage: (message: string) => void;
+  onGenerateConclusion: () => void;
+  queueSize: number;
   disabled?: boolean;
 }
 
-export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
+export function ChatInput({
+  onQueueMessage,
+  onGenerateConclusion,
+  queueSize,
+  disabled
+}: ChatInputProps) {
   const [input, setInput] = useState('');
   const { selectedAgents } = useStore();
 
-  const handleSend = () => {
+  const handleQueue = () => {
     if (input.trim() && !disabled && selectedAgents.length >= 2) {
-      onSendMessage(input.trim());
+      onQueueMessage(input.trim());
       setInput('');
     }
   };
@@ -25,13 +32,14 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      handleQueue();
     }
   };
 
   return (
     <div className="p-6 border-t border-border">
       <div className="max-w-4xl mx-auto">
+        <div className="flex flex-col gap-3">
         <div className="flex items-center gap-2 bg-card rounded-full border border-border px-5 h-14">
           <Button
             variant="ghost"
@@ -50,7 +58,7 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
           />
           {input.trim() ? (
             <Button
-              onClick={handleSend}
+                onClick={handleQueue}
               disabled={disabled || selectedAgents.length < 2}
               size="icon"
               className="h-8 w-8 bg-primary hover:bg-primary/90"
@@ -66,6 +74,17 @@ export function ChatInput({ onSendMessage, disabled }: ChatInputProps) {
               <Mic className="w-4 h-4" />
             </Button>
           )}
+          </div>
+          <div className="flex justify-end text-xs text-white/50">
+            <Button
+              size="sm"
+              className="bg-[#3B82F6] text-white px-4 py-2 rounded-full"
+              disabled={disabled || queueSize === 0 || selectedAgents.length < 2}
+              onClick={onGenerateConclusion}
+            >
+              Gerar conclusão
+            </Button>
+          </div>
         </div>
       </div>
     </div>

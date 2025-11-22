@@ -2,6 +2,64 @@ import { AdminAgent } from './types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
+export interface SystemSettings {
+  debate_config: {
+    max_rounds: number;
+    response_timeout: number;
+    allow_without_min_agents: boolean;
+  };
+  api_limits: {
+    monthly_tokens: number;
+    used_tokens: number;
+    alert_threshold: number;
+  };
+  security: {
+    admin_password_set: boolean;
+    enable_2fa: boolean;
+    log_activities: boolean;
+  };
+}
+
+export interface SystemSettingsResponse {
+  settings: SystemSettings;
+  warning?: string;
+}
+
+export interface SystemSettingsUpdate {
+  debate_config?: Partial<SystemSettings['debate_config']>;
+  api_limits?: Partial<Omit<SystemSettings['api_limits'], 'used_tokens'>>;
+  security?: {
+    enable_2fa?: boolean;
+    log_activities?: boolean;
+    admin_password?: string;
+  };
+}
+
+export async function getSystemSettings(): Promise<SystemSettingsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/settings`);
+  if (!response.ok) {
+    throw new Error(`Erro ao buscar configurações: ${response.statusText}`);
+  }
+  return response.json();
+}
+
+export async function updateSystemSettings(
+  payload: SystemSettingsUpdate
+): Promise<SystemSettingsResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/admin/settings`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Erro ao salvar configurações: ${errorText || response.statusText}`);
+  }
+  return response.json();
+}
+
 export interface AgentCreateRequest {
   name: string;
   avatar: string;

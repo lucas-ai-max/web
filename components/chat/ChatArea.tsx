@@ -1,284 +1,143 @@
 'use client';
 
-import { CSSProperties, useEffect, useMemo, useState } from 'react';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
-import { ChevronDown, Mic, Plus, RefreshCw, Send } from 'lucide-react';
+import { useEffect, useRef } from 'react';
+import { MoreVertical, Copy } from 'lucide-react';
+
 import { useStore } from '@/lib/store';
-import { EmptyState } from './EmptyState';
-import { AGENTS } from '@/lib/constants';
-import { getAgents } from '@/lib/api';
 import { Message } from '@/lib/types';
 
-type MentorPosition = CSSProperties & { avatarSize: string };
-
-const mentorPositions: Record<number, MentorPosition> = {
-  1: { position: 'absolute', bottom: '28%', left: '6%', avatarSize: '80px' },
-  2: { position: 'absolute', bottom: '22%', left: '28%', avatarSize: '80px' },
-  3: { position: 'absolute', bottom: '20%', left: '50%', transform: 'translateX(-50%)', avatarSize: '90px' },
-  4: { position: 'absolute', bottom: '22%', right: '28%', avatarSize: '80px' },
-  5: { position: 'absolute', bottom: '28%', right: '6%', avatarSize: '80px' }
-};
-
-const speechBubblePositions: Record<number, CSSProperties> = {
-  1: { bottom: '55%', left: '5%', maxWidth: '280px' },
-  2: { top: '12%', left: '8%', maxWidth: '280px' },
-  3: { top: '10%', left: '50%', transform: 'translateX(-50%)', maxWidth: '320px' },
-  4: { top: '12%', right: '8%', maxWidth: '280px' },
-  5: { bottom: '55%', right: '5%', maxWidth: '300px' }
-};
-
-const mentorList = [
-  {
-    id: 'mark',
-    name: 'Mark Zuckerberg',
-    avatar: 'https://upload.wikimedia.org/wikipedia/commons/0/04/Mark_Zuckerberg_F8_2019_Keynote_%28cropped%29.jpg'
-  },
-  {
-    id: 'bill',
-    name: 'Bill Gates',
-    avatar: 'https://upload.wikimedia.org/wikipedia/commons/4/4a/Bill_Gates_%282019%29.jpg'
-  },
-  {
-    id: 'jeff',
-    name: 'Jeff Bezos',
-    avatar: 'https://upload.wikimedia.org/wikipedia/commons/0/06/Jeff_Bezos_2017.jpg'
-  },
-  {
-    id: 'elon',
-    name: 'Elon Musk',
-    avatar: 'https://upload.wikimedia.org/wikipedia/commons/e/ed/Elon_Musk_Royal_Society_%28crop1%29.jpg'
-  },
-  {
-    id: 'tim',
-    name: 'Tim Cook',
-    avatar: 'https://upload.wikimedia.org/wikipedia/commons/7/70/Tim_Cook%2C_2017.jpg'
-  }
-];
-
-const bubbleOrientation: Record<number, 'top' | 'bottom'> = {
-  1: 'bottom',
-  2: 'top',
-  3: 'top',
-  4: 'top',
-  5: 'bottom'
-};
-
 export function ChatArea() {
-  const { getCurrentChat, isDebating, selectedAgents, numRodadas, setNumRodadas } = useStore();
-  const chat = getCurrentChat();
-  const [mounted, setMounted] = useState(false);
-  const [availableAgents, setAvailableAgents] = useState(AGENTS);
-  const [isCompact, setIsCompact] = useState(false);
-
-  const currentSelectedAgents = chat?.selectedAgents || selectedAgents;
+  const chat = useStore(state => state.getCurrentChat());
+  const messages = chat?.messages ?? [];
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setMounted(true);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
 
-    const handleResize = () => {
-      setIsCompact(window.innerWidth < 1024);
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-
-    getAgents()
-      .then(response => {
-        const formattedAgents = response.agentes.map((agent: any) => ({
-          id: agent.id,
-          name: agent.name,
-          role: agent.role,
-          avatar: agent.avatar || '👤',
-          color: agent.color || '#8b5cf6',
-          backstory: agent.backstory || ''
-        }));
-        const allAgents = [...formattedAgents, ...AGENTS.filter(a =>
-          !formattedAgents.some(fa => fa.name === a.name || fa.role === a.role)
-        )];
-        setAvailableAgents(allAgents);
-      })
-      .catch(error => {
-        console.error('Erro ao carregar agentes:', error);
-        setAvailableAgents(AGENTS);
-      });
-
-    return () => {
-      window.removeEventListener('resize', handleResize);
-    };
-  }, []);
-
-  const latestAgentMessages = useMemo(() => {
-    const map: Record<string, Message> = {};
-    chat?.messages.forEach(message => {
-      if (message.type === 'agent' && message.agentId) {
-        map[message.agentId] = message;
-      }
-    });
-    return map;
-  }, [chat?.messages]);
-
-  const lastAgentMessage = useMemo(() => {
-    return chat?.messages
-      .filter(message => message.type === 'agent' && !!message.agentId)
-      .pop();
-  }, [chat?.messages]);
-
-  const activeMentorId = lastAgentMessage?.agentId || currentSelectedAgents[0] || 'mark';
-
-  if (!mounted) {
-    return <div className="flex-1 h-full" />;
+  if (!chat) {
+    return (
+      <div className="flex-1 flex items-center justify-center bg-black/30">
+        <p className="text-white/60">Selecione um chat ou inicie um debate para ver as mensagens aqui.</p>
+      </div>
+    );
   }
-
-  if (!chat || chat.messages.length === 0) {
-    return <EmptyState />;
-  }
-
-  const consensusText =
-    [...chat.messages]
-      .reverse()
-      .find(message => message.type === 'sintese_conteudo' || message.type === 'sintese')?.content ||
-    chat.messages.find(message => message.type === 'agent')?.content ||
-    'Aguardando os mentores terminarem o raciocínio...';
-
-  const mentorCards = mentorList.map((mentorMeta, index) => {
-    const agent = availableAgents.find(agent => agent.id === mentorMeta.id);
-    const message = latestAgentMessages[mentorMeta.id];
-    const isActive = activeMentorId === mentorMeta.id;
-    const positionKey = index + 1;
-    const bubbleStyle = isCompact
-      ? { position: 'relative', transform: 'none', width: '90%', margin: '0 auto', bottom: 'auto', left: 'auto', right: 'auto' }
-      : { ...speechBubblePositions[positionKey], position: 'absolute' };
-    const { avatarSize, ...positionStyle } = mentorPositions[positionKey];
-    const mentorStyle = isCompact
-      ? { position: 'relative', transform: 'none', margin: '0 auto 1.5rem' }
-      : positionStyle;
-    const avatarSizeValue = isCompact ? '70px' : avatarSize || '80px';
-
-    return {
-      ...mentorMeta,
-      agent,
-      message,
-      isActive,
-      mentorStyle,
-      bubbleStyle,
-      avatarSize: avatarSizeValue
-    };
-  });
 
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="flex-1 flex flex-col bg-black/30 min-h-0">
       <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: "url('/mesa-experts%201.png')" }}
-      />
-      <div className="absolute inset-0 background-overlay" />
-
-      <div className="relative z-10 flex h-full flex-col">
-
-        <div className="relative flex-1">
-          <div className="mentors-table absolute inset-0 pointer-events-none">
-            <div className="absolute inset-x-16 bottom-6 h-40 rounded-[80px] bg-gradient-to-b from-white/10 to-black/80 blur-[60px] shadow-[0_40px_120px_rgba(0,0,0,0.7)]" />
-            {mentorCards.map((mentor, index) => (
-              <div
-                key={mentor.id}
-                className={`mentor-wrapper ${mentor.isActive ? 'active' : 'inactive'}`}
-                style={mentor.mentorStyle}
-              >
-                <div className="relative">
-                  <div className={`mentor-avatar ${mentor.isActive ? 'active' : ''}`} style={{ width: mentor.avatarSize, height: mentor.avatarSize }}>
-                    <Avatar className="h-full w-full bg-black/20 text-white">
-                      <AvatarImage src={mentor.avatar} alt={mentor.name} />
-                    </Avatar>
-                  </div>
-                  <div className="refresh-icon">
-                    <RefreshCw className="w-4 h-4 text-white" />
-                  </div>
-                </div>
-                {(mentor.message || mentor.isActive) && (
-                  <div
-                    className={`speech-bubble ${mentor.isActive ? 'active' : ''} ${bubbleOrientation[index + 1]}`}
-                    style={mentor.bubbleStyle}
-                  >
-                    <p className="text-[10px] uppercase tracking-[0.6em] text-white/60">{mentor.name}</p>
-                    <p className="mt-1 text-sm text-white leading-relaxed">
-                      {mentor.message?.content || 'Pensando em uma resposta...'}
-                    </p>
-                    {mentor.isActive && isDebating && (
-                      <span className="typing-indicator mt-3 text-white">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+        className="flex-1 chat-scroll px-5 py-6 space-y-4"
+        style={{ paddingTop: '8rem' }}
+      >
+        {messages.length === 0 ? (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-white/50">Nenhuma mensagem ainda. Envie uma pergunta para começar o debate.</p>
+          </div>
+        ) : (
+          <>
+            {messages.map(message => (
+              <MessageBubble key={message.id} message={message} onCopy={copyToClipboard} />
             ))}
+            <div ref={messagesEndRef} />
+          </>
+        )}
+      </div>
+      {scrollStyles}
+    </div>
+  );
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text);
+  }
+}
+
+function MessageBubble({ message, onCopy }: { message: Message; onCopy: (text: string) => void }) {
+  const isUserMessage = message.type === 'user' || message.type === 'question';
+
+  if (isUserMessage) {
+    return (
+      <div className="flex justify-end items-start gap-2">
+        <div className="flex flex-col items-end max-w-2xl text-right">
+          <div className="bg-[#2563eb] rounded-2xl rounded-tr-sm px-4 py-3 shadow-lg border border-white/10">
+            <p className="text-white text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
           </div>
+          <span className="text-xs text-white/40 mt-1 px-1">
+            {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
         </div>
+      </div>
+    );
+  }
 
-        <div className="fixed bottom-24 left-1/2 z-40 w-full max-w-4xl -translate-x-1/2 px-4 md:px-6">
-          <div className="bg-white/90 backdrop-blur-sm rounded-xl p-3 mb-4 shadow-lg">
-            <input
-              type="text"
-              value="printer took a galley of type and scrambled it to make a *"
-              className="w-full bg-transparent text-gray-700 text-sm outline-none"
-              disabled
-            />
+  return (
+    <div className="flex items-start gap-3 group">
+      <div className="relative flex-shrink-0">
+        {message.agentAvatar ? (
+          <img
+            src={message.agentAvatar}
+            alt={message.agentName}
+            className="w-10 h-10 rounded-full object-cover border-2 border-white/20"
+          />
+        ) : (
+          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+            <span className="text-xs text-white/70">{message.agentName?.[0]}</span>
           </div>
-
-          <div className="bg-gray-900/95 backdrop-blur-lg rounded-2xl p-6 shadow-2xl border border-white/10 text-white">
-            <h3 className="text-center text-sm font-semibold tracking-[0.3em] uppercase text-white/80 mb-3">
-              CONSENSO GERAL SOBRE O ASSUNTO:
-            </h3>
-            <div className="text-gray-300 text-sm leading-relaxed text-justify max-h-64 overflow-y-auto custom-scrollbar">
-              {consensusText}
-            </div>
-          </div>
+        )}
+      </div>
+      <div className="flex flex-col items-start max-w-2xl">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-sm font-medium text-white/90">{message.agentName}</span>
+          <span className="text-xs text-white/50">{message.agentRole}</span>
         </div>
-
-        <div className="fixed bottom-0 left-0 right-0 bg-black/80 backdrop-blur-lg border-t border-white/10 p-4 z-50">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex flex-wrap justify-between items-center gap-2 mb-3">
-              <div className="flex gap-2 flex-wrap">
-                <button className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2">
-                  Perguntar para: Todos
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-                <button
-                  className="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm flex items-center gap-2"
-                  onClick={() => setNumRodadas(numRodadas + 1)}
-                >
-                  Rodada {numRodadas}
-                  <ChevronDown className="w-3 h-3" />
-                </button>
-              </div>
-
-              <button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-medium text-sm transition-colors">
-                Solicitar conclusão
-              </button>
-            </div>
-
-            <div className="bg-white rounded-full p-2 flex items-center gap-2 shadow-lg">
-              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Plus size={20} className="text-gray-600" />
-              </button>
-              <input
-                type="text"
-                placeholder="Faça sua pergunta"
-                className="flex-1 outline-none text-sm px-2"
-              />
-              <button className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <Mic size={18} className="text-gray-600" />
-              </button>
-              <button className="p-2 hover:bg-blue-100 rounded-full transition-colors">
-                <Send size={18} className="text-blue-600" />
-              </button>
-            </div>
+        <div className="bg-white/10 backdrop-blur-md rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg border border-white/10 relative">
+          <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+        </div>
+        <div className="flex items-center gap-3 mt-1 px-1">
+          <span className="text-xs text-white/40">
+            {new Date(message.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <button
+              onClick={() => onCopy(message.content)}
+              className="p-1 hover:bg-white/10 rounded transition-colors"
+              title="Copiar"
+            >
+              <Copy size={14} className="text-white/60" />
+            </button>
+            <button className="p-1 hover:bg-white/10 rounded transition-colors">
+              <MoreVertical size={14} className="text-white/60" />
+            </button>
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+const scrollStyles = (
+  <style jsx global>{`
+    .chat-scroll {
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
+    }
+
+    .chat-scroll::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    .chat-scroll::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .chat-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+    }
+
+    .chat-scroll::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+  `}</style>
+);
 

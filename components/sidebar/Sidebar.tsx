@@ -13,13 +13,25 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 
 export function Sidebar() {
   const router = useRouter();
-  const { chats, createChat, setCurrentChat, folders, selectedFolderId, setSelectedFolder, moveChatToFolder, deleteFolder } = useStore();
+  const {
+    chats,
+    createChat,
+    setCurrentChat,
+    folders,
+    selectedFolderId,
+    setSelectedFolder,
+    moveChatToFolder,
+    deleteFolder,
+    deleteChat,
+    currentChatId
+  } = useStore();
   const [isFoldersExpanded, setIsFoldersExpanded] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [draggedChatId, setDraggedChatId] = useState<string | null>(null);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [menuOpenFolderId, setMenuOpenFolderId] = useState<string | null>(null);
+  const [menuOpenChatId, setMenuOpenChatId] = useState<string | null>(null);
 
   const handleNewChat = () => {
     setCurrentChat(null);
@@ -33,6 +45,13 @@ export function Sidebar() {
   const handleFolderClick = (folderId: string) => {
     setSelectedFolder(folderId);
     router.push(`/folder/${folderId}`);
+  };
+
+  const handleDeleteChat = (chatId: string) => {
+    if (confirm('Deseja excluir este chat?')) {
+      deleteChat(chatId);
+    }
+    setMenuOpenChatId(null);
   };
 
   const handleDeleteFolder = (folderId: string) => {
@@ -112,7 +131,7 @@ export function Sidebar() {
   };
 
   return (
-    <div className="w-[280px] h-screen bg-[#1a1a1a] flex flex-col fixed left-0 top-0 z-40 border-r border-white/10">
+    <div className="w-[280px] h-screen bg-black/10 backdrop-blur-[30px] border-r border-white/10 flex flex-col fixed left-0 top-0 z-50">
       <div className="p-6 flex flex-col gap-4 overflow-y-auto">
         {/* Botão Iniciar nova conversa */}
         <Button
@@ -207,23 +226,64 @@ export function Sidebar() {
             {chats.filter(chat => !chat.folderId).length > 0 ? (
               chats
                 .filter(chat => !chat.folderId)
-                .map((chat) => (
-                  <button
+              .map((chat) => {
+                const isActive = currentChatId === chat.id;
+                return (
+                  <div
                     key={chat.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, chat.id)}
-                    onDragEnd={handleDragEnd}
-                    className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-[rgba(59,130,246,0.1)] text-[#9CA3AF] hover:text-white text-sm transition-all duration-200 ${
-                      draggedChatId === chat.id 
-                        ? 'opacity-30 scale-95 blur-sm cursor-grabbing' 
-                        : 'cursor-grab active:cursor-grabbing'
-                    }`}
-                    onClick={() => setCurrentChat(chat.id)}
+                    className="flex items-center gap-2"
                   >
-                    <img src="/chat-criado.png" alt={chat.title} className="w-3 h-3" />
-                    <span className="truncate">{chat.title}</span>
-                  </button>
-                ))
+                    <button
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, chat.id)}
+                      onDragEnd={handleDragEnd}
+                      onClick={() => {
+                        setCurrentChat(chat.id);
+                        router.push('/');
+                      }}
+                      className={`flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? 'bg-white/10 text-white ring-1 ring-white/30 shadow-lg'
+                          : 'text-[#9CA3AF] hover:text-white hover:bg-[rgba(59,130,246,0.1)]'
+                      } ${
+                        draggedChatId === chat.id
+                          ? 'opacity-30 scale-95 blur-sm'
+                          : ''
+                      }`}
+                    >
+                      <img src="/chat-criado.png" alt={chat.title} className="w-3 h-3" />
+                      <span className="truncate">{chat.title}</span>
+                    </button>
+                    <DropdownMenu
+                      open={menuOpenChatId === chat.id}
+                      onOpenChange={(open) => setMenuOpenChatId(open ? chat.id : null)}
+                    >
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                          }}
+                          className="p-1 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent className="bg-[#2d2d2d] border-white/10 w-40">
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteChat(chat.id);
+                          }}
+                          className="text-red-500 hover:bg-red-500/20 cursor-pointer"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir conversa
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                );
+              })
             ) : (
               <div className="px-3 py-2 text-xs text-[#9CA3AF]/60">
                 Nenhum chat ainda

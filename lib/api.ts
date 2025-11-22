@@ -4,6 +4,9 @@ export interface StartDebateRequest {
   agentes: string[];
   pergunta: string;
   num_rodadas: number;
+  contexto?: string[];
+  modo?: 'debate' | 'sintese';
+  salvar?: boolean;
 }
 
 export interface DebateResponse {

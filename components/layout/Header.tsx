@@ -13,8 +13,17 @@ export function Header() {
 
   return (
     <header 
-      className="flex items-center justify-between border border-white/20 bg-black/90 backdrop-blur-md relative z-50 mx-4 mt-4 shadow-2xl"
-      style={{ paddingTop: '8px', paddingBottom: '8px', paddingLeft: '20px', paddingRight: '20px', borderRadius: '70px', gap: '20px' }}
+      className="fixed top-6 z-50 flex items-center justify-between border border-white/10 bg-black/20 backdrop-blur-xl shadow-2xl"
+      style={{
+        left: 'calc(280px + 24px)',
+        right: '24px',
+        paddingTop: '10px',
+        paddingBottom: '10px',
+        paddingLeft: '22px',
+        paddingRight: '22px',
+        borderRadius: '80px',
+        gap: '24px'
+      }}
     >
       {/* Navegação ou Voltar */}
       <div className="flex items-center gap-4 flex-shrink-0">
