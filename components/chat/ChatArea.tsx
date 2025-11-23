@@ -14,7 +14,7 @@ export function ChatArea() {
   const isDebating = useStore(state => state.isDebating);
   const globalSelectedAgents = useStore(state => state.selectedAgents);
   // Usar os agentes selecionados do chat atual, ou do store global como fallback
-  const chatSelectedAgents = chat?.selectedAgents?.length > 0 ? chat.selectedAgents : globalSelectedAgents;
+  const chatSelectedAgents = (chat?.selectedAgents && chat.selectedAgents.length > 0) ? chat.selectedAgents : globalSelectedAgents;
   const [availableAgents, setAvailableAgents] = useState(AGENTS);
 
   // Função para gerar ID único baseado no nome
