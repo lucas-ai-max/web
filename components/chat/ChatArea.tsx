@@ -94,7 +94,7 @@ export function ChatArea() {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(selectedId)) {
         return selectedId;
-  }
+      }
 
       // Tentar encontrar o agente por ID antigo ou nome
       const agent = availableAgents.find(a => 
@@ -132,10 +132,36 @@ export function ChatArea() {
   const typingAgent = useMemo(() => {
     if (!isDebating || agentNames.length === 0) return null;
     const agentName = agentNames[highlightedAgentIndex];
-    return availableAgents.find(a => a.name === agentName);
-  }, [isDebating, agentNames, highlightedAgentIndex, availableAgents]);
+    // Tentar encontrar o agente por nome exato
+    let agent = availableAgents.find(a => a.name === agentName);
+    
+    // Se não encontrar, tentar busca mais flexível (case-insensitive, sem espaços extras)
+    if (!agent) {
+      agent = availableAgents.find(a => 
+        a.name.toLowerCase().trim() === agentName.toLowerCase().trim() ||
+        a.name.toLowerCase().replace(/\s+/g, '') === agentName.toLowerCase().replace(/\s+/g, '')
+      );
+    }
+    
+    // Se ainda não encontrar, retornar objeto com informações básicas mas manter o nome
+    if (!agent) {
+      // Tentar encontrar pelo ID selecionado
+      const selectedId = chatSelectedAgents?.[highlightedAgentIndex];
+      if (selectedId) {
+        agent = availableAgents.find(a => a.id === selectedId);
+      }
+    }
+    
+    return agent || {
+      id: 'unknown',
+      name: agentName,
+      role: 'Gerando resposta...',
+      avatar: '👤',
+      color: '#8b5cf6'
+    };
+  }, [isDebating, agentNames, highlightedAgentIndex, availableAgents, chatSelectedAgents]);
 
-  return (
+    return (
     <div className="flex-1 flex flex-col bg-black/30 min-h-0 relative overflow-hidden">
       <div
         className="flex-1 chat-scroll px-5 py-6 space-y-4"
@@ -150,27 +176,8 @@ export function ChatArea() {
             {messages.map(message => (
               <MessageBubble key={message.id} message={message} onCopy={copyToClipboard} />
             ))}
-            {isDebating && (
-              typingAgent ? (
-                <TypingIndicator agent={typingAgent} />
-              ) : (
-                // Fallback: mostrar indicador genérico se o agente não foi encontrado ainda
-                agentNames.length > 0 ? (
-                  <TypingIndicator agent={{
-                    id: 'loading',
-                    name: agentNames[highlightedAgentIndex] || 'Agente',
-                    role: 'Gerando resposta...',
-                    avatar: '👤'
-                  }} />
-                ) : (
-                  <TypingIndicator agent={{
-                    id: 'loading',
-                    name: 'Agente',
-                    role: 'Gerando resposta...',
-                    avatar: '👤'
-                  }} />
-                )
-              )
+            {isDebating && typingAgent && (
+              <TypingIndicator agent={typingAgent} />
             )}
             <div ref={messagesEndRef} />
           </>
@@ -188,11 +195,18 @@ export function ChatArea() {
 function TypingIndicator({ agent }: { agent: { id: string; name: string; role: string; avatar?: string; color?: string } }) {
   const renderAvatar = () => {
     const avatar = agent.avatar || '👤';
-    const isImageUrl = (url: string) => {
+    const isImageUrl = (url: string | undefined) => {
+      if (!url) return false;
       return url.startsWith('http://') ||
              url.startsWith('https://') ||
              url.startsWith('data:image') ||
-             url.startsWith('/');
+             url.startsWith('/') ||
+             url.includes('.jpg') ||
+             url.includes('.jpeg') ||
+             url.includes('.png') ||
+             url.includes('.gif') ||
+             url.includes('.webp') ||
+             url.includes('.svg');
     };
     
     if (agent.avatar && isImageUrl(agent.avatar)) {
@@ -201,9 +215,18 @@ function TypingIndicator({ agent }: { agent: { id: string; name: string; role: s
           src={agent.avatar}
           alt={agent.name}
           className="w-10 h-10 rounded-full object-cover border-2 border-white/20"
+          onError={(e) => {
+            // Se a imagem falhar ao carregar, mostrar fallback
+            const target = e.target as HTMLImageElement;
+            target.style.display = 'none';
+            const parent = target.parentElement;
+            if (parent) {
+              parent.innerHTML = `<div class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/20"><span class="text-xs text-white/70">${agent.name?.[0] || '👤'}</span></div>`;
+            }
+          }}
         />
       );
-    } else if (agent.avatar) {
+    } else if (agent.avatar && agent.avatar.trim() !== '') {
       return (
         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/20">
           <span className="text-lg">{avatar}</span>
@@ -212,7 +235,7 @@ function TypingIndicator({ agent }: { agent: { id: string; name: string; role: s
     } else {
       return (
         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center border-2 border-white/20">
-          <span className="text-xs text-white/70">{agent.name?.[0] || '👤'}</span>
+          <span className="text-xs text-white/70">{agent.name?.[0]?.toUpperCase() || '👤'}</span>
         </div>
       );
     }
