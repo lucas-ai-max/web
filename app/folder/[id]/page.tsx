@@ -272,31 +272,32 @@ export default function FolderPage() {
         // Também verificar por ID antigo (normalização de IDs)
         if (agent) {
           // Criar lista de IDs válidos para este agente (incluindo nomes antigos)
+          const currentAgent = agent; // Garantir que TypeScript entenda que não é undefined
           const validIdsForAgent = [
-            agent.id,
-            agent.name.toLowerCase(),
-            agent.name.toLowerCase().replace(/\s+/g, ''),
-            generateAgentId(agent.name),
-            generateAgentId(agent.name).replace('agent_', '')
+            currentAgent.id,
+            currentAgent.name.toLowerCase(),
+            currentAgent.name.toLowerCase().replace(/\s+/g, ''),
+            generateAgentId(currentAgent.name),
+            generateAgentId(currentAgent.name).replace('agent_', '')
           ];
           
           // Verificar se algum dos IDs válidos está na lista de selecionados
           const isSelected = chatSelectedAgents.some(selectedId => {
             // Match direto por ID
-            if (selectedId === agent.id) return true;
+            if (selectedId === currentAgent.id) return true;
             
             // Match por nome (para IDs antigos como "tim", "elon")
-            if (selectedId.toLowerCase() === agent.name.toLowerCase()) return true;
-            if (selectedId.toLowerCase() === agent.name.toLowerCase().replace(/\s+/g, '')) return true;
+            if (selectedId.toLowerCase() === currentAgent.name.toLowerCase()) return true;
+            if (selectedId.toLowerCase() === currentAgent.name.toLowerCase().replace(/\s+/g, '')) return true;
             
             // Match por IDs válidos gerados
             return validIdsForAgent.includes(selectedId);
           });
           
           if (!isSelected) {
-            console.log(`[DEBUG] Ignorando resposta de agente não selecionado: ${item.agente} (ID: ${agent.id}, Nome: ${agent.name})`);
+            console.log(`[DEBUG] Ignorando resposta de agente não selecionado: ${item.agente} (ID: ${currentAgent.id}, Nome: ${currentAgent.name})`);
             console.log(`[DEBUG] Agentes selecionados:`, chatSelectedAgents);
-            agent = null;
+            agent = undefined;
           }
         }
 
@@ -308,14 +309,16 @@ export default function FolderPage() {
         // Marcar mensagem como adicionada
         mensagensAdicionadas.add(messageKey);
 
+        // TypeScript: garantir que agent não é undefined
+        const finalAgent = agent;
         const agentMessage: Message = {
           id: `agent-${Date.now()}-${Math.random()}`,
           type: 'agent',
-          agentId: agent.id,
-          agentName: agent.name,
-          agentRole: agent.role,
-          agentAvatar: agent.avatar || '👤',
-          agentColor: agent.color || '#8b5cf6',
+          agentId: finalAgent.id,
+          agentName: finalAgent.name,
+          agentRole: finalAgent.role,
+          agentAvatar: finalAgent.avatar || '👤',
+          agentColor: finalAgent.color || '#8b5cf6',
           content: item.conteudo,
           timestamp: new Date()
         };
