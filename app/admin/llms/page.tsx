@@ -74,10 +74,10 @@ export default function LLMsPage() {
 
     try {
       setSaving((prev) => ({ ...prev, [provider]: true }));
-      // Salvar API key sem marcar como connected - só após teste
+      // Salvar API key - se estava conectado, vai desconectar até testar novamente
       await updateLLMProvider(provider, {
         api_key: apiKey,
-        // Não definir status aqui - só após teste bem-sucedido
+        status: 'disconnected', // Sempre desconectar ao salvar nova chave - precisa testar novamente
       });
       
       // Recarregar provedores
@@ -239,13 +239,9 @@ export default function LLMsPage() {
           <CardContent className="space-y-4">
             <FormField label="API Key">
                   <Input
-                    type={provider.status === 'connected' ? 'text' : 'password'}
+                    type="password"
                     placeholder={provider.provider === 'openai' ? 'sk-...' : provider.provider === 'anthropic' ? 'sk-ant-...' : 'AIza...'}
-                    value={
-                      provider.status === 'connected' && provider.api_key
-                        ? provider.api_key  // Mostrar chave parcial quando conectada
-                        : (apiKeys[provider.provider] || '')
-                    }
+                    value={apiKeys[provider.provider] || ''}
                     onChange={(e) =>
                       setApiKeys((prev) => ({
                         ...prev,
@@ -253,74 +249,72 @@ export default function LLMsPage() {
                       }))
                     }
                     className="bg-background"
-                    disabled={provider.status === 'connected'} // Desabilitar quando conectada
                   />
-                  {provider.status === 'connected' && provider.api_key && (
+                  {provider.status === 'connected' && (
+                    <p className="text-xs text-yellow-500 mt-1">
+                      ⚠️ Editar a chave desconectará o provedor. Você precisará testar novamente após salvar.
+                    </p>
+                  )}
+                  {provider.status !== 'connected' && !apiKeys[provider.provider] && (
                     <p className="text-xs text-muted-foreground mt-1">
-                      Chave configurada e funcionando
+                      Digite sua API key e clique em "Salvar"
                     </p>
                   )}
             </FormField>
 
                 <div className="flex gap-2">
-                  {provider.status !== 'connected' ? (
-                    <>
-                      <Button
-                        type="button"
-                        onClick={() => handleSaveApiKey(provider.provider)}
-                        disabled={saving[provider.provider] || testing[provider.provider]}
-                        className="flex-1"
-                        variant="default"
-                      >
-                        {saving[provider.provider] ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Salvando...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-4 h-4 mr-2" />
-                            Salvar
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleTestConnection(provider.provider)}
-                        disabled={saving[provider.provider] || testing[provider.provider] || !apiKeys[provider.provider]?.trim()}
-                        className="flex-1"
-                        variant="outline"
-                      >
-                        {testing[provider.provider] ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Testando...
-                          </>
-                        ) : (
-                          <>
-                            <TestTube2 className="w-4 h-4 mr-2" />
-                            Testar
-                          </>
-                        )}
-                      </Button>
-                    </>
-                  ) : (
+                  <Button
+                    type="button"
+                    onClick={() => handleSaveApiKey(provider.provider)}
+                    disabled={saving[provider.provider] || testing[provider.provider] || !apiKeys[provider.provider]?.trim()}
+                    className="flex-1"
+                    variant="default"
+                  >
+                    {saving[provider.provider] ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 mr-2" />
+                        {provider.status === 'connected' ? 'Atualizar' : 'Salvar'}
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    onClick={() => handleTestConnection(provider.provider)}
+                    disabled={saving[provider.provider] || testing[provider.provider] || !apiKeys[provider.provider]?.trim()}
+                    className="flex-1"
+                    variant="outline"
+                  >
+                    {testing[provider.provider] ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Testando...
+                      </>
+                    ) : (
+                      <>
+                        <TestTube2 className="w-4 h-4 mr-2" />
+                        Testar
+                      </>
+                    )}
+                  </Button>
+                  {provider.status === 'connected' && (
                     <Button
                       type="button"
                       onClick={() => handleDeleteApiKey(provider.provider)}
                       disabled={saving[provider.provider] || testing[provider.provider]}
-                      className="w-full"
                       variant="destructive"
                     >
                       {saving[provider.provider] ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Deletando...
                         </>
                       ) : (
                         <>
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Deletar Chave
+                          <Trash2 className="w-4 h-4" />
                         </>
                       )}
                     </Button>
