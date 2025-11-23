@@ -11,6 +11,13 @@ const compat = new FlatCompat({
 
 const eslintConfig = [
   ...compat.extends("next/core-web-vitals"),
+  {
+    rules: {
+      // Desabilitar regras que causam warnings mas não são críticas
+      "@next/next/no-img-element": "warn", // Aviso em vez de erro
+      "react-hooks/exhaustive-deps": "warn", // Aviso em vez de erro
+    },
+  },
 ];
 
 export default eslintConfig;
