@@ -339,9 +339,10 @@ export default function FolderPage() {
 
     if (mode === 'sintese' && response.debate_id) {
       const currentChat = chats.find(c => c.id === chatId);
-      if (currentChat?.folderId) {
+      const folderId = currentChat?.folderId;
+      if (folderId) {
         import('@/lib/folders-api').then(({ moveDebateToFolder }) => {
-          moveDebateToFolder(response.debate_id, currentChat.folderId).catch(error => {
+          moveDebateToFolder(response.debate_id, folderId).catch(error => {
             console.error('Erro ao sincronizar pasta no banco:', error);
           });
         });
