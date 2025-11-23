@@ -1,4 +1,4 @@
-# Mesa de Debates - Interface Web Modern
+# Mesa de Debates - Interface Web Moderna
 
 Interface web moderna para debates entre bilionários de tecnologia usando Next.js 14+, TypeScript, Tailwind CSS e Shadcn/ui.
 
