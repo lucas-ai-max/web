@@ -200,7 +200,7 @@ export function Header() {
                       return (
                         <button
                           key={chat.id}
-                          onClick={() => handleChatClick(chat.id, chat.folderId)}
+                          onClick={() => handleChatClick(chat.id, chat.folderId ?? null)}
                           className="w-full flex items-center gap-3 px-4 py-2 hover:bg-white/10 transition-colors text-left"
                         >
                           <MessageSquare className="w-4 h-4 text-white/60 flex-shrink-0" />
