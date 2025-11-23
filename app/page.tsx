@@ -258,7 +258,7 @@ export default function Home() {
         
         // Tentar encontrar o agente correspondente ao nome/role retornado pelo backend
         // Primeiro, encontrar o agente pelo nome/role (independente de estar selecionado)
-        let agent = null;
+        let agent: Agent | undefined = undefined;
         
         // PRIORIDADE 1: Match exato por nome (mais confiável)
         agent = availableAgents.find(a => item.agente === a.name);
