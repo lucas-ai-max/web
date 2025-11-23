@@ -186,12 +186,14 @@ export default function Home() {
 
   const processDebateResponse = (chatId: string, response: Awaited<ReturnType<typeof startDebate>>, mode: 'debate' | 'sintese') => {
     if (response.debate_id) {
-      updateChatDebateId(chatId, response.debate_id);
+      const debateId = response.debate_id; // Extrair para garantir tipagem dentro do callback
+      updateChatDebateId(chatId, debateId);
 
       const currentChat = chats.find(c => c.id === chatId);
-      if (currentChat?.folderId) {
+      const folderId = currentChat?.folderId;
+      if (folderId) {
         import('@/lib/folders-api').then(({ moveDebateToFolder }) => {
-          moveDebateToFolder(response.debate_id, currentChat.folderId).catch(error => {
+          moveDebateToFolder(debateId, folderId).catch(error => {
             console.error('Erro ao sincronizar pasta no banco:', error);
           });
         });
