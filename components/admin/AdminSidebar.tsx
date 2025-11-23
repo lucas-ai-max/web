@@ -13,8 +13,16 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { listAgents } from '@/lib/admin-api';
+import type { LucideIcon } from 'lucide-react';
 
-const menuItemsBase = [
+interface MenuItem {
+  icon: LucideIcon;
+  label: string;
+  href: string;
+  badge?: string;
+}
+
+const menuItemsBase: MenuItem[] = [
   { icon: LayoutDashboard, label: 'Dashboard', href: '/admin/dashboard' },
   { icon: Users, label: 'Agentes', href: '/admin/agents' },
   { icon: Brain, label: 'LLMs', href: '/admin/llms' },
@@ -58,7 +66,7 @@ export function AdminSidebar() {
     };
   }, []);
 
-  const menuItems = menuItemsBase.map(item => {
+  const menuItems: MenuItem[] = menuItemsBase.map(item => {
     if (item.href === '/admin/agents' && agentCount !== null) {
       return { ...item, badge: agentCount.toString() };
     }
