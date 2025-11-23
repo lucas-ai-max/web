@@ -424,8 +424,8 @@ export default function FolderPage() {
     
     if (!confirmed) return;
     
-    deleteChat(chatId);
-    setMenuOpenChatId(null);
+      deleteChat(chatId);
+      setMenuOpenChatId(null);
   };
 
   const handleRemoveFromFolder = (chatId: string) => {
@@ -537,7 +537,7 @@ export default function FolderPage() {
       timestamp: new Date()
     };
     addMessage(chatId, questionMessage);
-    
+
     // Ativar indicador de "digitando" imediatamente após adicionar a mensagem do usuário
     setIsDebating(true);
 
@@ -593,10 +593,10 @@ export default function FolderPage() {
       
       if (!confirmed) return;
       
-      deleteFolder(folderId);
-      setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
-      setSelectedFolder(null);
-      router.push('/');
+        deleteFolder(folderId);
+        setToastMessage(`Pasta "${folder.name}" excluída${folderChats.length > 0 ? `. ${folderChats.length} chat(s) movido(s) para o geral.` : ''}`);
+        setSelectedFolder(null);
+        router.push('/');
     }
   };
 
@@ -688,7 +688,7 @@ export default function FolderPage() {
                       onSelect={(e) => {
                         e.preventDefault();
                         setTimeout(() => {
-                          handleDeleteFolder();
+                        handleDeleteFolder();
                         }, 0);
                       }}
                       className="text-red-500 hover:bg-red-500/20 cursor-pointer"
@@ -825,7 +825,7 @@ export default function FolderPage() {
                               onSelect={(e) => {
                                 e.preventDefault();
                                 setTimeout(() => {
-                                  handleDeleteChat(chat.id);
+                                handleDeleteChat(chat.id);
                                 }, 0);
                               }}
                               className="text-red-500 hover:bg-red-500/20 cursor-pointer"
