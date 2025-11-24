@@ -71,6 +71,21 @@ export function AgentForm({ agentId }: AgentFormProps) {
     }
   }, [agentId, isEditing]);
 
+  // Resetar provider se o atual não estiver conectado
+  useEffect(() => {
+    if (llmProviders.length === 0) return; // Aguardar providers carregarem
+    
+    const connectedProviders = getConnectedProviders();
+    const currentProvider = llmProviders.find(p => p.provider === formData.llm_provider);
+    
+    if (connectedProviders.length > 0) {
+      // Se o provider atual não está conectado, usar o primeiro conectado disponível
+      if (!currentProvider || currentProvider.status !== 'connected') {
+        setFormData(prev => ({ ...prev, llm_provider: connectedProviders[0].provider }));
+      }
+    }
+  }, [llmProviders.length]);
+
   // Resetar modelo quando o provider mudar e o modelo atual não estiver disponível
   useEffect(() => {
     if (llmProviders.length === 0) return; // Aguardar providers carregarem
@@ -92,6 +107,11 @@ export function AgentForm({ agentId }: AgentFormProps) {
     } catch (error) {
       console.error('Erro ao carregar providers LLM:', error);
     }
+  };
+
+  // Função para obter provedores conectados
+  const getConnectedProviders = () => {
+    return llmProviders.filter(p => p.status === 'connected');
   };
 
   // Função para obter modelos habilitados do provider selecionado
@@ -581,9 +601,17 @@ export function AgentForm({ agentId }: AgentFormProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="openai">OpenAI</SelectItem>
-                    <SelectItem value="anthropic">Anthropic</SelectItem>
-                    <SelectItem value="google">Google</SelectItem>
+                    {getConnectedProviders().length > 0 ? (
+                      getConnectedProviders().map((provider) => (
+                        <SelectItem key={provider.provider} value={provider.provider}>
+                          {provider.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        Nenhum provedor conectado
+                      </SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </FormField>
