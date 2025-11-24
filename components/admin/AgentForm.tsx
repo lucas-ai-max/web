@@ -580,8 +580,10 @@ export function AgentForm({ agentId }: AgentFormProps) {
                     )}
                     {formData.llm_provider === 'google' && (
                       <>
-                        <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
-                        <SelectItem value="gemini-ultra">Gemini Ultra</SelectItem>
+                        <SelectItem value="gemini-3-pro">Gemini 3 Pro</SelectItem>
+                        <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                        <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                        <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</SelectItem>
                       </>
                     )}
                   </SelectContent>
