@@ -16,7 +16,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Lightbulb, Info } from 'lucide-react';
 import { FormField } from './FormField';
-import { getAgent, createAgent, updateAgent, deleteAgent, uploadAvatar, addAgentKnowledge, listAgentKnowledge, deleteAgentKnowledge, uploadAgentKnowledgeFile, AgentKnowledge } from '@/lib/admin-api';
+import { getAgent, createAgent, updateAgent, deleteAgent, uploadAvatar, addAgentKnowledge, listAgentKnowledge, deleteAgentKnowledge, uploadAgentKnowledgeFile, AgentKnowledge, listLLMProviders, LLMProvider } from '@/lib/admin-api';
 import { Separator } from '@/components/ui/separator';
 import { useToastStore } from '@/lib/toast-store';
 import { useConfirm } from '@/lib/useConfirm';
@@ -60,12 +60,49 @@ export function AgentForm({ agentId }: AgentFormProps) {
   const [loadingFile, setLoadingFile] = useState(false);
   const [loadingKnowledgeList, setLoadingKnowledgeList] = useState(false);
 
+  // Estado para providers LLM
+  const [llmProviders, setLlmProviders] = useState<LLMProvider[]>([]);
+
   useEffect(() => {
+    loadLLMProviders();
     if (isEditing && agentId) {
       loadAgent();
       loadKnowledge();
     }
   }, [agentId, isEditing]);
+
+  // Resetar modelo quando o provider mudar e o modelo atual não estiver disponível
+  useEffect(() => {
+    if (llmProviders.length === 0) return; // Aguardar providers carregarem
+    
+    const enabledModels = getEnabledModels();
+    if (enabledModels.length > 0) {
+      const currentModelExists = enabledModels.find(m => m.key === formData.llm_model);
+      if (!currentModelExists) {
+        // Se o modelo atual não está na lista de habilitados, usar o primeiro disponível
+        setFormData(prev => ({ ...prev, llm_model: enabledModels[0].key }));
+      }
+    }
+  }, [formData.llm_provider, llmProviders.length]);
+
+  const loadLLMProviders = async () => {
+    try {
+      const providers = await listLLMProviders();
+      setLlmProviders(providers);
+    } catch (error) {
+      console.error('Erro ao carregar providers LLM:', error);
+    }
+  };
+
+  // Função para obter modelos habilitados do provider selecionado
+  const getEnabledModels = () => {
+    const provider = llmProviders.find(p => p.provider === formData.llm_provider);
+    if (!provider || !provider.models) return [];
+    
+    return Object.entries(provider.models)
+      .filter(([_, model]) => model.enabled)
+      .map(([key, model]) => ({ key, ...model }));
+  };
 
   const loadAgent = async () => {
     if (!agentId) return;
@@ -562,29 +599,16 @@ export function AgentForm({ agentId }: AgentFormProps) {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {formData.llm_provider === 'openai' && (
-                      <>
-                        <SelectItem value="gpt-4">GPT-4</SelectItem>
-                        <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                        <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
-                        <SelectItem value="gpt-4.1-mini">GPT-4.1 Mini</SelectItem>
-                        <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                      </>
-                    )}
-                    {formData.llm_provider === 'anthropic' && (
-                      <>
-                        <SelectItem value="claude-3-opus">Claude 3 Opus</SelectItem>
-                        <SelectItem value="claude-3-sonnet">Claude 3 Sonnet</SelectItem>
-                        <SelectItem value="claude-3-haiku">Claude 3 Haiku</SelectItem>
-                      </>
-                    )}
-                    {formData.llm_provider === 'google' && (
-                      <>
-                        <SelectItem value="gemini-3-pro">Gemini 3 Pro</SelectItem>
-                        <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
-                        <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
-                        <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</SelectItem>
-                      </>
+                    {getEnabledModels().length > 0 ? (
+                      getEnabledModels().map((model) => (
+                        <SelectItem key={model.key} value={model.key}>
+                          {model.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>
+                        Nenhum modelo habilitado
+                      </SelectItem>
                     )}
                   </SelectContent>
                 </Select>
