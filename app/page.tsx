@@ -83,6 +83,7 @@ export default function Home() {
           id: generateAgentId(agent.name, agent.id), // Gerar ID único se necessário
           name: agent.name,
           role: agent.role,
+          description: agent.description,
           avatar: agent.avatar || '👤',
           color: agent.color || '#8b5cf6',
           backstory: agent.backstory || ''
