@@ -317,6 +317,7 @@ export default function FolderPage() {
           agentId: finalAgent.id,
           agentName: finalAgent.name,
           agentRole: finalAgent.role,
+          agentDescription: finalAgent.description,
           agentAvatar: finalAgent.avatar || '👤',
           agentColor: finalAgent.color || '#8b5cf6',
           content: item.conteudo,

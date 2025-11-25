@@ -49,6 +49,7 @@ export function ChatArea() {
             id: generateAgentId(agent.name, agent.id), // Gerar ID único se necessário
           name: agent.name,
           role: agent.role,
+          description: agent.description,
           avatar: agent.avatar || '👤',
           color: agent.color || '#8b5cf6',
           backstory: agent.backstory || ''
@@ -156,6 +157,7 @@ export function ChatArea() {
       id: 'unknown',
       name: agentName,
       role: 'Gerando resposta...',
+      description: 'Gerando resposta...',
       avatar: '👤',
       color: '#8b5cf6'
     };
@@ -192,7 +194,7 @@ export function ChatArea() {
   }
 }
 
-function TypingIndicator({ agent }: { agent: { id: string; name: string; role: string; avatar?: string; color?: string } }) {
+function TypingIndicator({ agent }: { agent: { id: string; name: string; role: string; description?: string; avatar?: string; color?: string } }) {
   const renderAvatar = () => {
     const avatar = agent.avatar || '👤';
     const isImageUrl = (url: string | undefined) => {
@@ -249,7 +251,7 @@ function TypingIndicator({ agent }: { agent: { id: string; name: string; role: s
       <div className="flex flex-col items-start max-w-2xl">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium text-white/90">{agent.name}</span>
-          <span className="text-xs text-white/50">{agent.role}</span>
+          <span className="text-xs text-white/50">{agent.description || agent.role || ''}</span>
         </div>
         <div className="bg-white/10 backdrop-blur-md rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg border border-white/10">
           <div className="flex items-center gap-2">
@@ -361,7 +363,7 @@ function MessageBubble({ message, onCopy }: { message: Message; onCopy: (text: s
       <div className="flex flex-col items-start max-w-2xl">
         <div className="flex items-center gap-2 mb-1">
           <span className="text-sm font-medium text-white/90">{message.agentName}</span>
-          <span className="text-xs text-white/50">{message.agentRole}</span>
+          <span className="text-xs text-white/50">{message.agentDescription || message.agentRole || ''}</span>
         </div>
         <div className="bg-white/10 backdrop-blur-md rounded-2xl rounded-tl-sm px-4 py-3 shadow-lg border border-white/10 relative">
           <p className="text-white/90 text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>

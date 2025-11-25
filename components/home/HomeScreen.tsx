@@ -25,6 +25,7 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
           id: agent.id,
           name: agent.name,
           role: agent.role,
+          description: agent.description,
           avatar: agent.avatar || '👤',
           color: agent.color || '#8b5cf6',
           backstory: agent.backstory || ''
@@ -138,7 +139,7 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                       </Avatar>
                       <div className="flex-1">
                         <p className="text-white font-medium text-sm">{agent.name}</p>
-                        <p className="text-white/60 text-xs">{agent.role}</p>
+                        <p className="text-white/60 text-xs">{agent.description || agent.role || ''}</p>
                       </div>
                     </div>
                   ))}

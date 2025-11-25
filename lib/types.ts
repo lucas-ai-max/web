@@ -37,6 +37,7 @@ export interface Message {
   agentId?: string;
   agentName?: string;
   agentRole?: string;
+  agentDescription?: string;
   agentAvatar?: string;
   agentColor?: string;
   content: string;
