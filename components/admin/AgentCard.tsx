@@ -62,7 +62,7 @@ export function AgentCard({ agent }: AgentCardProps) {
           </div>
           <div>
             <h3 className="font-bold text-lg">{agent.name}</h3>
-            <p className="text-sm text-muted-foreground">{agent.description || agent.role || ''}</p>
+            <p className="text-sm text-muted-foreground">{agent.description || ''}</p>
           </div>
         </div>
         <DropdownMenu>

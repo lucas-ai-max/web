@@ -67,7 +67,7 @@ export function MessageBubble({
     
     // Se não encontrou, usar dados do message diretamente (para agentes dinâmicos)
     const agentName = agent?.name || message.agentName || 'Agente';
-    const agentDescription = agent?.description || message.agentDescription || message.agentRole || agent?.role || '';
+    const agentDescription = agent?.description || message.agentDescription || '';
     // Priorizar avatar da mensagem, depois do agente encontrado, depois fallback
     const agentAvatar = message.agentAvatar || agent?.avatar || agentName?.charAt(0) || '👤';
     const agentColor = message.agentColor || agent?.color || '#8b5cf6';

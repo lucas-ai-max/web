@@ -139,7 +139,7 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                       </Avatar>
                       <div className="flex-1">
                         <p className="text-white font-medium text-sm">{agent.name}</p>
-                        <p className="text-white/60 text-xs">{agent.description || agent.role || ''}</p>
+                        <p className="text-white/60 text-xs">{agent.description || ''}</p>
                       </div>
                     </div>
                   ))}
