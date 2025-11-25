@@ -116,16 +116,16 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                   {availableAgents.map((agent) => (
                     <div
                       key={agent.id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer h-[70px] flex-shrink-0"
+                      className="flex items-start gap-3 p-3 rounded-lg hover:bg-white/5 cursor-pointer min-h-[70px] flex-shrink-0"
                       onClick={() => toggleAgent(agent.id)}
                     >
                       <Checkbox
                         id={agent.id}
                         checked={selectedAgents.includes(agent.id)}
                         onCheckedChange={() => toggleAgent(agent.id)}
-                        className="border-white/20"
+                        className="border-white/20 mt-1"
                       />
-                      <Avatar className="w-10 h-10">
+                      <Avatar className="w-10 h-10 flex-shrink-0">
                         {agent.avatar && (agent.avatar.startsWith('http') || agent.avatar.startsWith('data:image') || agent.avatar.startsWith('https://')) ? (
                           <AvatarImage
                             src={agent.avatar}
@@ -137,9 +137,11 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                           {agent.avatar && !agent.avatar.startsWith('http') && !agent.avatar.startsWith('data:image') ? agent.avatar : (agent.name?.charAt(0)?.toUpperCase() || '👤')}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="text-white font-medium text-sm">{agent.name}</p>
-                        <p className="text-white/60 text-xs">{agent.description || ''}</p>
+                        {agent.description && (
+                          <p className="text-white/60 text-xs mt-1 line-clamp-2">{agent.description}</p>
+                        )}
                       </div>
                     </div>
                   ))}
