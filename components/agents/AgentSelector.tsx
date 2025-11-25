@@ -45,6 +45,7 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
         id: agent.id,
         name: agent.name,
         role: agent.role,
+        description: agent.description,
         avatar: agent.avatar || '👤',
         color: agent.color || '#8b5cf6',
         backstory: agent.backstory || ''
@@ -61,7 +62,8 @@ export function AgentSelector({ open, onOpenChange }: AgentSelectorProps) {
 
   const filteredAgents = agents.filter((agent) =>
     agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    agent.role.toLowerCase().includes(searchQuery.toLowerCase())
+    agent.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (agent.description && agent.description.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleToggleAgent = (agentId: string) => {

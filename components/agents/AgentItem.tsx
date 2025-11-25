@@ -51,7 +51,7 @@ export function AgentItem({ agent, selected, onToggle }: AgentItemProps) {
             Em destaque
           </Badge>
         </div>
-        <p className="text-xs text-muted-foreground truncate">{agent.role}</p>
+        <p className="text-xs text-muted-foreground truncate">{agent.description || agent.role || ''}</p>
       </div>
     </div>
   );
