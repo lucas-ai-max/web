@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { MoreVertical, Copy } from 'lucide-react';
 
 import { useStore } from '@/lib/store';
-import { Message } from '@/lib/types';
+import { Message, Agent } from '@/lib/types';
 import { AGENTS } from '@/lib/constants';
 
 export function ChatArea() {
@@ -45,7 +45,7 @@ export function ChatArea() {
     import('@/lib/api').then(({ getAgents }) => {
     getAgents()
       .then(response => {
-        const formattedAgents = response.agentes.map((agent: any) => ({
+        const formattedAgents: Agent[] = response.agentes.map((agent: any) => ({
             id: generateAgentId(agent.name, agent.id), // Gerar ID único se necessário
           name: agent.name,
           role: agent.role,
@@ -56,7 +56,7 @@ export function ChatArea() {
         }));
           // Combinar com lista hardcoded (prioridade para agentes da API)
           // Remover duplicatas baseadas no nome (mesmo nome = mesmo agente)
-          const allAgentsMap = new Map<string, typeof formattedAgents[0]>();
+          const allAgentsMap = new Map<string, Agent>();
           
           // Primeiro, adicionar agentes da API
           formattedAgents.forEach(agent => {
