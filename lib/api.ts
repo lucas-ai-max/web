@@ -48,6 +48,7 @@ export interface AgentResponse {
   id: string;
   name: string;
   role: string;
+  description?: string;
   avatar?: string;
   color?: string;
   backstory?: string;
