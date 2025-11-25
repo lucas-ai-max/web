@@ -21,15 +21,18 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
     // Carregar agentes da API
     getAgents()
       .then(response => {
-        const formattedAgents = response.agentes.map((agent: any) => ({
-          id: agent.id,
-          name: agent.name,
-          role: agent.role,
-          description: agent.description,
-          avatar: agent.avatar || '👤',
-          color: agent.color || '#8b5cf6',
-          backstory: agent.backstory || ''
-        }));
+        const formattedAgents = response.agentes.map((agent: any) => {
+          console.log('[HomeScreen] Agente carregado:', agent.name, 'Description:', agent.description);
+          return {
+            id: agent.id,
+            name: agent.name,
+            role: agent.role,
+            description: agent.description,
+            avatar: agent.avatar || '👤',
+            color: agent.color || '#8b5cf6',
+            backstory: agent.backstory || ''
+          };
+        });
         const allAgents = [...formattedAgents, ...AGENTS.filter(a => 
           !formattedAgents.some(fa => fa.name === a.name || fa.role === a.role)
         )];
@@ -137,11 +140,13 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
                           {agent.avatar && !agent.avatar.startsWith('http') && !agent.avatar.startsWith('data:image') ? agent.avatar : (agent.name?.charAt(0)?.toUpperCase() || '👤')}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 overflow-hidden">
                         <p className="text-white font-medium text-sm">{agent.name}</p>
-                        {agent.description && (
-                          <p className="text-white/60 text-xs mt-1 line-clamp-2">{agent.description}</p>
-                        )}
+                        {agent.description ? (
+                          <p className="text-white/60 text-xs mt-1 line-clamp-2 break-words overflow-hidden text-ellipsis" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                            {agent.description}
+                          </p>
+                        ) : null}
                       </div>
                     </div>
                   ))}
