@@ -19,7 +19,8 @@ interface AgentCardProps {
   agent: {
     id: string;
     name: string;
-    role: string;
+    role?: string;
+    description?: string;
     avatar: string;
     color: string;
     llm: string;
@@ -61,7 +62,7 @@ export function AgentCard({ agent }: AgentCardProps) {
           </div>
           <div>
             <h3 className="font-bold text-lg">{agent.name}</h3>
-            <p className="text-sm text-muted-foreground">{agent.role}</p>
+            <p className="text-sm text-muted-foreground">{agent.description || agent.role || ''}</p>
           </div>
         </div>
         <DropdownMenu>

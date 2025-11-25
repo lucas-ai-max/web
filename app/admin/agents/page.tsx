@@ -86,6 +86,7 @@ export default function AgentsPage() {
                 id: agent.id,
                 name: agent.name,
                 role: agent.role,
+                description: agent.description,
                 avatar: agent.avatar,
                 color: agent.color,
                 llm: agent.llm_model,
