@@ -80,13 +80,6 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
       <div className="relative z-10 text-center max-w-3xl px-8 w-full py-8">
         {/* Logo Principal */}
         <div className="mb-8">
-          <div className="flex items-center justify-center mb-2">
-            <img 
-              src="/LOGO%20TRIA%20AI.png" 
-              alt="TRIA Ai" 
-              className="h-24 w-auto object-contain"
-            />
-          </div>
           <p className="text-2xl text-white/90 mt-4">
             Pense grande. Decida maior.
           </p>
