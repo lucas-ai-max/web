@@ -78,23 +78,17 @@ export function HomeScreen({ onQueueMessage, folderName }: { onQueueMessage: (pe
       <div className="fixed inset-0 bg-black/50 z-10" />
 
       <div className="relative z-10 text-center max-w-3xl px-8 w-full py-8">
-        {/* Logo Principal */}
-        <div className="mb-8">
-          <p className="text-2xl text-white/90 mt-4">
-            Pense grande. Decida maior.
-          </p>
-          {folderName && (
-            <div className="flex items-center justify-center gap-2 mt-4">
-              <img 
-                src="/folder-open.png" 
-                alt="Pasta" 
-                className="w-6 h-6 object-contain filter brightness-0 invert"
-                style={{ filter: 'brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(211deg) brightness(100%) contrast(100%)' }}
-              />
-              <p className="text-white text-base font-medium">{folderName}</p>
-            </div>
-          )}
-        </div>
+        {folderName && (
+          <div className="flex items-center justify-center gap-2 mb-8">
+            <img 
+              src="/folder-open.png" 
+              alt="Pasta" 
+              className="w-6 h-6 object-contain filter brightness-0 invert"
+              style={{ filter: 'brightness(0) saturate(100%) invert(48%) sepia(79%) saturate(2476%) hue-rotate(211deg) brightness(100%) contrast(100%)' }}
+            />
+            <p className="text-white text-base font-medium">{folderName}</p>
+          </div>
+        )}
 
         {/* Controles de Debate */}
         <div className="flex items-center justify-start gap-2 mb-4 flex-wrap">
