@@ -608,7 +608,7 @@ export function AgentForm({ agentId }: AgentFormProps) {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="none" disabled>
                         Nenhum provedor conectado
                       </SelectItem>
                     )}
@@ -634,7 +634,7 @@ export function AgentForm({ agentId }: AgentFormProps) {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>
+                      <SelectItem value="none" disabled>
                         Nenhum modelo habilitado
                       </SelectItem>
                     )}
